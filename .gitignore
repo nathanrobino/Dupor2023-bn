@@ -556,3 +556,21 @@ tmp/
 .zenodo_token
 */.zenodo_token
 private-dev/zenodo/.zenodo_token
+
+# ── Hide internal project directories from public GitHub ──
+Code/
+Data/
+Equations/
+Figures/
+history/
+images/
+Subfiles/
+Tables/
+tabular/
+
+# ── Hide top-level project files from public GitHub ──
+Dupor2023-bn-abstract.txt
+Dupor2023-bn-Slides.tex
+Dupor2023-bn.dep
+Dupor2023-bn.pdf
+Dupor2023-bn.tex
