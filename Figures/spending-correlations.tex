@@ -1,0 +1,27 @@
+\input{./._relpath-to-latexroot.ltx}
+\documentclass[\latexroot/\projectname]{subfiles}
+\input{\latexroot/@resources/subfile-setup.ltx}
+
+\begin{document}
+
+\begin{figure}[h]
+  \begin{center}
+    \includegraphics[alt={},width=\textwidth]{Figures/Images/spending-correlations.jpg}
+  \captionsetup{labelformat=empty}
+  \caption{Government spending and percentage change in retail and auto spending (2008-12), by counties}
+  \end{center}
+  \end{figure}
+
+\noindent\parbox{\textwidth}{\footnotesize
+  \textbf{Notes}: Binned scatter plots between government spending (Recovery Act through 2012) and the percentage
+  change in consumer spending, between 2008 and 2012, by county. The left panel shows changes in retail spending
+  (Nielsen, Retail Scanner), and the right panel shows changes in auto spending (CCP/Equifax). The regression lines
+   in both panels are estimated using population weights.
+}
+
+\vspace{1em}  % Add space after figure
+
+% Smart bibliography: Only include bibliography if standalone AND has citations
+\smartbib
+
+\end{document}

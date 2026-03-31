@@ -1,0 +1,28 @@
+\input{./._relpath-to-latexroot.ltx}
+\documentclass[\latexroot/\projectname]{subfiles}
+\input{\latexroot/@resources/subfile-setup.ltx}
+
+\begin{document}
+
+\begin{table}[h]
+  \centering
+  \caption{Steady state: Benchmark versus RA-NK\whenintegrated{\label{tab:robust-steady-state-rank}}}
+  \begin{tabular}{lcc}
+    \hline
+     & \textbf{Benchmark} & \textbf{RA-NK} \\
+    \hline
+    Liquid assets/income & 1.20 & 1.20 \\
+    Liquid assets Gini & 0.75 & 0.00 \\
+    Median MPC & 0.11 & 0.05 \\
+    Average MPC & 0.37 & 0.05 \\
+    \hline
+  \end{tabular}
+  \begin{flushleft}
+    \footnotesize
+    \textit{Notes:} Selected steady-state statistics in the benchmark model and an economy with a representative agent in each region (RA-NK). The MPC is reported at an annual frequency.
+  \end{flushleft}
+\end{table}
+
+\smartbib
+
+\end{document}

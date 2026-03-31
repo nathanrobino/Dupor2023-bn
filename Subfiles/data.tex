@@ -1,0 +1,61 @@
+\input{./._relpath-to-latexroot.ltx}
+\documentclass[\latexroot/\projectname]{subfiles}
+\input{\latexroot/@resources/subfile-setup.ltx}
+
+\begin{document}
+
+\section{Data}
+\whenintegrated{\label{sec:data}} % integrated doc: SST for labels
+
+Our empirical analysis employs regional variation in government spending and consumer spending. We analyse data on government spending from the ARRA (2015). We use the NielsenIQ (2013) dataset to measure retail purchases. We use data on household auto financing from the FRB NY Consumer Credit Panel/Equifax (2017) (hereafter, CCP). The Nielsen and CCP data are available at a store/individual level with detailed geographical information (zip code).
+
+\subsection{Consumer spending}
+The Nielsen Retail Scanner data cover 2006 through 2014.\footnote{This paper contains researcher(s)' own analyses calculated (or derived) based in part on data from Nielsen Consumer LLC and marketing databases provided through the NielsenIQ datasets at the Kilts Center for Marketing Data Center at The University of Chicago Booth School of Business. The conclusions drawn from the NielsenIQ data are those of the researcher(s) and do not reflect the views of NielsenIQ. NielsenIQ is not responsible for, had no role in, and was not involved in analysing and preparing the results reported herein. Information about the data and access are available at \href{http://research.chicagobooth.edu/nielsen/}{http://research.chicagobooth.edu/nielsen/}.} Approximately 40,000 stores from ninety retail chains provide weekly point-of-sale information on units sold, average prices, universal product code (UPC) codes, and product characteristics. In 2010, the total sales in Nielsen stores constituted $42 \%$ of total sales in grocery stores and about $7 \%$ of total retail sales (excluding vehicle purchases).\footnote{A second source for consumer spending is the Nielsen HomeScan Consumer Panel Dataset which is a longitudinal panel of approximately 60,000 U.S. households who record information about their retail purchases, including shopping trip dates, the number of units purchased, UPC codes, and the total spending amounts. In Supplementary Material, Appendix A, we show that Retail Scanner data correlate more closely with aggregate time series from the Bureau of Economic Analysis relative to HomeScan data.}
+
+Purchases in the Nielsen dataset include a combination of non-durable and durable goods. The durable goods included in our data are fast-moving products and typically not very expensive. Examples include cameras and office supplies. We find that around $53 \%$ of annual spending takes place in grocery and discount stores. Hardware, home improvement, and electronics stores account for just $4 \%$ of annual spending.
+
+We measure auto spending using information on household auto finance loans, recorded in detailed data on individual debt for the Federal Reserve Bank of New York consumer credit panel. The CCP is a quarterly panel of administrative, anonymous, individual-level data, including consumer liabilities, some demographic information, credit scores, and home address zip codes. The total number of individuals in the Equifax panel is approximately 10 million. The number of vehicles purchased in our panel (we identify a purchase to have occurred when an individual's auto balance increases between the previous and the current quarter) closely tracks the number of newly (first-time) registered passenger cars across time (see Supplementary Material, Appendix A). Table 1 provides a summary of our consumer spending data.
+
+\subsection{Government spending}
+The ARRA had three major components-tax benefits, entitlements, and federal contracts and grants-with roughly a third of the total spending going to each. In this paper, we focus on the contracts and grants, which totalled roughly $\$ 228$ billion. Contracts and grants were spread across many industries, including large amounts to transportation, infrastructure, energy, and (most significantly) education.
+
+\subfile{../Tables/consumer-spending}
+
+\subfile{../Figures/gov-spending-counties}
+
+To promote transparency, the federal government posted detailed information about each award on its \href{http://Recovery.gov}{Recovery.gov} website, including the total amount awarded, the total amount spent to date, the award date, and funding agency. The website also provided zip code identifiers not only for primary recipients but also for vendors, subcontractors, and other entities for each award. We assign spending to localities based on the ultimate receivers of each part of the award. For example, suppose an award was dispersed through a federal agency, which in turn was given to a state-level agency, which was then apportioned to several private entities. We locate spending using the various zip codes of those private entities. Figure 1 contains a county-level map of ARRA spending through 2012. Table 2 reports, at various percentiles, per-capita spending by county.
+
+\subfile{../Tables/county-spending-distribution}
+
+Instrumental variable. A common challenge for identifying the effect of government stimulus on economic variables is that these programmes take place during times of economic distress. Similarly, in our case, it is possible that the money allocated to local communities explicitly targeted areas that were hit the hardest by the recession. To address this potential endogeneity, we determine components of the Act that were allocated using criteria orthogonal to the state of the local business cycle.
+
+Each agency responsible for dispersing Recovery Act dollars provided explicit criteria by which funds would be allocated. We use these criteria to distinguish between awards that explicitly targeted local economic recovery from awards that did not. For example, the ARRA's Department of Education support for children with disabilities was apportioned according to a county's relative population of children with disabilities rather than the local business cycle. As a second example, money provided through the Federal Highway Administration for road improvement and maintenance was distributed based upon population density and passenger miles travelled at the state level. Many awards that did not explicitly target local economic recovery relate to water quality assistance grants. The Environmental Protection Agency (EPA) instructions for state agencies were to select projects where water quality needs were the greatest, while priority was given to projects "ready to proceed to construction within 12 months" of the Act's passage.\footnote{For a more detailed analysis of the selection criteria driving our narrative instrumental variable approach, see Dupor and Mehkari~\cite{Dupor2014-hh} and Dupor and McCrory~\cite{Dupor2018-zh}.}
+
+Our instrument is the sum within a county of all funds allocated by these agencies. The total amount of all dollars awarded through 2012 was $\$ 228$ billion, with $20.2 \%$ satisfying our selection criteria and therefore belonging to our instrument.
+
+Although the language used for the dispersion of funds included in our instrument did not explicitly target local economic recovery, it is possible that these awards were inadvertently allocated toward areas most affected by the recession. For example, even if water quality assistance grants were allocated based on environmental and not economic needs, they might have been implicitly directed toward low-income areas. To analyse if the Recovery Act spending correlates with local economic conditions, we use the following county-level regression:
+
+
+\begin{equation*}
+G_{j}=a+D_{s}+\beta \times X_{j}+\varepsilon_{j}, \tag{2.1}
+\end{equation*}
+
+
+where $G_{j}$ denotes the money awarded per household at county $j$ during the period 2009-12. We run the regression when $G_{j}$ is the total money awarded per household (denoted "Total") and separately for the case where $G_{j}$ is the subset of money allocated using our selected criteria (denoted "Instrument"). $D_{s}$ is a state dummy and $X_{j}$ denotes pre-Recovery Act county-level economic characteristics. These include per-capita income in 2007, the unemployment rate in 2007, the change in per-capita income between 2007 and 2009, and the change in the unemployment rate between 2007 and 2009.\footnote{When we expand the set of control variables to include the 2008 per-capita county income and unemployment, the results are little changed.} We run a separate regression for each local economic characteristic and report the estimates in Table 3.
+
+\subfile{../Tables/recovery-local-econ}
+
+Total spending is, for the most part, positively and not negatively correlated with economic characteristics, as economic targeting would imply. For example, counties with $\$ 10,000$ higher per-capita income in 2007 received an additional $\$ 52$ per capita. Our results are consistent with the analysis of Boone et al.~\cite{Boone2014-ix}, who also find that there was no particular economic targeting in the Recovery Act. In all cases, our instrument mitigates the correlation between spending and pre-Recovery Act local economic conditions. We view this as supporting evidence that our selected criteria for the construction of the instrument are largely uncorrelated with the local business cycle.
+
+We also analyse if government spending is correlated with pre-trends in consumer spending (see details in Supplementary Material, Appendix C). We find that government spending does not correlate with either retail or auto spending during 2007 and 2008 (i.e. prior to the Act). Therefore, consumption pre-trends were broadly similar between the large-dollar and smalldollar recipient counties.
+
+% Smart bibliography: Only include bibliography if standalone AND has citations
+\smartbib
+
+\pdfonly{
+  % execute this version if compiling with pdflatex
+  \captionsetup[figure]{list=no}
+  \captionsetup[table]{list=no}
+}
+
+\end{document}

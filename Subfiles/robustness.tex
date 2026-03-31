@@ -1,0 +1,83 @@
+\input{./._relpath-to-latexroot.ltx}
+\documentclass[\latexroot/\projectname]{subfiles}
+\input{\latexroot/@resources/subfile-setup.ltx}
+\begin{document}
+
+\FloatBarrier
+\hypertarget{robustness}{}
+
+\section*{Alternative models and specifications}
+\whenintegrated{\label{sec:robustness}} % integrated doc: SST for labels
+
+We test how sensitive our main results are to alternative models and specifications. First, we consider an economy with no within-region heterogeneity. This is equivalent to a RA-NK model with two regions. Second, we analyse alternative fiscal regimes such as taxation at the local instead of the federal level as well as deficit-financed spending. Third, we consider a utility specification that depends on disutility of hours. Fourth, we analyse the implications of a Benabou-type tax schedule. Fifth, we analyse an economy with higher wealth than the benchmark economy. Sixth, we consider a liquidity trap experiment. Finally, we compute a "normal times" fiscal multiplier. In all of our experiments, upon modifying the model along one of these dimensions, we recalibrate the model to match the benchmark targets.
+
+\subsection{Heterogeneous agents new Keynesian versus RA-NK model}
+Our benchmark model combines a regional framework with a heterogeneous agents model. A natural question is what would the local and aggregate multiplier be without heterogeneity within a region? To address this question, we shut down idiosyncratic shocks and discount factor heterogeneity. We assume that there is a single, representative household which receives the average productivity shock (normalized to one) and that this shock persists in all time periods. Hence, in this model, the within-region distribution of labour income, assets, and discount rates, $\phi_{i}$, is degenerate. In addition, dividends are collected directly by the household. We call this economy a RA-NK. Note, however, that regions are still different across the transition because they receive different amounts of government spending.
+
+For a steady-state equilibrium with positive asset holdings to exist, we have to assume that $\beta(1+R)=1$. We write the problem of the representative household in region $i$ :
+
+
+\begin{align*}
+V_{i, t}\left(a_{t}\right)= & \max _{c_{t}, a_{t+1}, h_{t}}\left\{\frac{c_{t}^{1-\sigma}}{1-\sigma}+\psi \frac{\left(1-h_{t}\right)^{1-\theta}}{1-\theta}+\beta V_{i, t+1}\left(a_{t+1}\right)\right\}  \tag{6.1}\\
+\text { s.t. } & c_{t}+\left(1+\pi_{i, t+1}\right) a_{t+1}=w_{i, t} h_{t}-\mathcal{T}+\left(1+R_{t-1}+\chi\right) a_{t}+\left(1-\tau_{d}\right) D_{i, t}  \tag{6.2}\\
+& a_{t+1} \geq 0 \tag{6.3}
+\end{align*}
+
+
+A new aspect of this budget constraint is that we have introduced the term $\chi$. Here, $\chi$ is a function given by
+
+$$
+\chi=\Delta\left(a_{t+1}-a_{s s}\right)
+$$
+
+Similar types of debt rules are common in small open economy models and help induce stationarity. A negative $\Delta$ means that the savings interest rate is lower when agents save more than the steady-state asset holdings and vice versa.\footnote{We set $\Delta=-0.5\%$ to match the percentage change of asset holdings relative to the steady state between RA-NK and Benchmark.} Moreover, the assumption of a borrowing constraint is irrelevant as the representative household never holds a negative net worth. Table 12 compares the steady state between our Benchmark and the RA-NK economy. The RA-NK model features a substantially lower MPC compared to our Benchmark. The average MPC (at an annual frequency) is 0.05 , while in our benchmark economy it is 0.37 .
+
+Figure 11 plots the consumption impulse response functions in our Benchmark (left panel) and the RA-NK model (right panel). In the RA-NK model, consumer spending responds less to government spending as the average MPC is lower.
+
+\subfile{../Tables/benchmark-vs-rank}
+
+\subfile{../Figures/rank-comparison}
+
+\subfile{../Tables/consumption-decomposition}
+
+Both the local and the aggregate fiscal multipliers are lower relative to our Benchmark. In particular, in the RA-NK model, the local multiplier is equal to 0.09 , and the aggregate is equal to 0.06 .
+
+The difference across model specifications is related to the response of consumer spending due to the change in wages (Table 13). If only wages had changed in our Benchmark, the local multiplier would be 0.28 , and the aggregate multiplier would be 0.48 , whereas in the RA-NK, the effect decreases to 0.13 and 0.17 , respectively. Consumer spending decreases more in our Benchmark due to dividends compared to the RA-NK, but the difference is not enough to counteract the large differential response in consumption due to wages. Inflation affects consumer spending in both economies in broadly the same way. Finally, consumer spending increases due to taxes in the Benchmark while it slightly decreases in the RA-NK. However, overall, the effect of taxes seems relatively small.
+
+In sum, the large difference between the Benchmark and the RA-NK multipliers come from the differential response of consumer spending to increases in labour income. In our Benchmark, the average MPC is 0.37 while in the RA-NK it is 0.05 . With a higher average MPC, the increase in labour income generates a substantial consumption response. This results in larger consumption multipliers both at the local and the aggregate levels.
+
+An intermediate case between the Benchmark and the RA-NK model is a model with idiosyncratic income shocks but no discount factor heterogeneity. In this model, the average annual MPC is 0.30 . The resulting local consumption multiplier is 0.13 , and the aggregate consumption multiplier is 0.19 . Thus, our empirical evidence on the local consumption multiplier favours a new Keynesian model with rich heterogeneity (in both labour productivities and discount factors) over a model with only income risk. This is especially true compared to a model with a representative agent.
+
+\subsection{Alternative specifications}
+Alternative fiscal rules. In the Benchmark model, taxation occurs at the federal level. Here, we assume that regions pay taxes proportional to the stimulus injected in the region. In particular, since region 2 receives $36 \%$ of the spending allocated in region 1 , it pays almost three times less the taxes set in region 1. Higher initial inflation decreases the government debt service cost and decreases the tax rate for the first few years following the shock. As a result, region 1 benefits more when taxes are local than when taxes are federal and the local multiplier increases to 0.26 . The aggregate multiplier is not affected and is equal to 0.41 . Next, we allow for the government to finance all of the spending using deficit financing. In particular, the government issues (and rolls over) debt up to year $T$ and starts imposing taxes for $t>T$ in order to bring the debt equal to its steady-state value. We consider $T=\{1,4,10\}$. The local multiplier is $0.20,0.12$, and 0.16 while the aggregate consumption multiplier is $0.35,0.41$, and 0.74 , respectively. The aggregate multiplier is higher when spending is tax financed than when it is deficit financed for a short horizon (less than four years). As mentioned, higher initial inflation decreases the government debt service cost and decreases the tax rate for the first couple of years. As a result, allowing tax to adjust generates higher multipliers. Since this effect lasts only for the first couple of years, deficit financing for ten years ahead generates larger consumption multipliers.
+
+Preferences with disutility of labour. In the benchmark utility specification, the labour supply elasticity depends jointly on parameter $\theta$ and the hours of work. We also solve the model when we specify the utility function as disutility in hours: $U=\log (c)-\psi\left(h^{1+1 / \theta} /(1+1 / \theta)\right)$. We set $\theta$ and $\psi$ to match the same labour supply elasticity and average hours as in the benchmark model. The local multiplier in this case is 0.19 and the aggregate is 0.38 .
+
+Benabou tax function. Our benchmark tax function consists of a transfer and a linear tax in household earnings. As an alternative, we use a Benabou-type of parametric tax function:
+
+$$
+\mathcal{T}_{t}=[w x h+\delta(1-\omega) D]-\left(1-\tau_{0}\right)[w x h+\delta(1-\omega) D]^{1-\tau_{1}}
+$$
+
+We set $\tau_{0}$ to match the same government-output ratio as in the benchmark model and $\tau_{1}=$ 0.036 based on Guner et al.~\cite{Guner2014-xr}. With this specification, the local multiplier is 0.17 , and the aggregate multiplier is 0.30 .
+
+High-wealth economy. In our benchmark calibration, we abstract from other illiquid forms of wealth (for example, houses). As a robustness exercise, we consider an alternative steady-state\\
+economy that features a much higher wealth-output ratio relative to the benchmark model. We assume that only the patient households hold this additional wealth. We do so by calibrating the discount factor parameters (mean and dispersion) jointly to achieve (i) a wealth-output ratio three times higher the benchmark target and (ii) that the impatient households hold the same amount of assets as in the benchmark model. Adding very wealthy individuals decreases the annual MPC from 0.37 to 0.34 . The wealthy households already have a very low MPC, so making them even wealthier does not significantly affect the average.
+
+Great recession. We simulate an episode that resembles the Great Recession. First, we introduce a discount factor shock which decreases consumer demand to a magnitude similar to the decline documented in the Great Recession. In addition, the monetary authority sets the nominal rate based on the aggregate inflation rate $\hat{\pi}$ using the rule $R_{t}=\max \left\{\underline{\mathrm{R}}, R_{s s}+\zeta \hat{\pi}_{t}\right\}$. The nominal rate is constrained by the effective lower bound $R$. The decline in consumer demand generates deflation and hence, pushes the nominal rate to the effective lower bound. The monetary authority resumes an active response to inflation once the effective lower bound no longer binds, gradually raising the rate back to its steady-state level (in contrast, in the benchmark model the nominal interest rate is fully pegged).\footnote{We calibrate the effective lower bound so that interest rates are temporarily unresponsive for about three years. Empirically, interest rates remained at the lower bound for longer but such a feature would require a counterfactually large and persistent decline in consumer demand. The effective lower bound in our model is set at one percentage point lower than the normal level of the interest rate (annualized). One justification is that interest rates in a broader class of savings and borrowing instruments (e.g. government debt, credit card debt) declined but did not go to zero.}
+
+We compute the aggregate multiplier as follows. First, in the model with the shocks described above, we compute the aggregate consumption path. Second, we compute the aggregate consumption path in a model with only discount factor shocks. The aggregate multiplier is computed by the difference in these paths normalized by the aggregate government spending. We find that the aggregate multiplier in this experiment is 0.35 versus 0.41 in our benchmark case. Thus, moving from a fully fixed nominal rate (as in our benchmark) to one that combines an effective lower bound period with a resumption of an active response to inflation reduces our multiplier only slightly. The reason is that the bulk of the government spending occurs, both in the data and the model, while the economy is constrained by the lower bound. If the stimulus had taken place during a time of unconstrained monetary policy, the aggregate multiplier would be much smaller than the benchmark (see Section 5.6).
+
+Normal times multiplier. We compute a "normal times" fiscal multiplier by adjusting the model in two dimensions. First, we switch from an interest rate peg (as in the Benchmark) to a conventional Taylor rule of the form $R_{t}=\left(1-\rho_{R}\right) R_{s s}+\rho_{R}\left[R_{t-1}+\phi_{\pi} \hat{\pi}+\phi_{y} \hat{y}\right]$ where $\rho_{R}=0.8, \phi_{y}=0.2$, and $\phi_{\pi}=1.5$. Second, we calibrate the government spending process based on U.S. historical data. Specifically, we use a simple AR(1) with a persistence parameter of 0.85 as in Nakamura and Steinsson~\cite{Nakamura2011-dw}. The normal times two- and four-year output multipliers are 0.46 and 0.25 , respectively, which are consistent with the values reported by Ramey and Zubairy~\cite{Ramey2018-rc} (equal to 0.26 and 0.21 , respectively).
+
+
+% Bibliography inclusion handled automatically by document structure
+\smartbib
+
+\pdfonly{
+  % execute this version if compiling with pdflatex
+  \captionsetup[figure]{list=no}
+  \captionsetup[table]{list=no}
+}
+
+\end{document}

@@ -1,0 +1,121 @@
+\input{./._relpath-to-latexroot.ltx}
+\documentclass[\latexroot/\projectname]{subfiles}
+\input{\latexroot/@resources/subfile-setup.ltx}
+\begin{document}
+
+\section{The local fiscal multiplier}
+\whenintegrated{\label{sec:empirics}}
+
+\subsection{Definitions and basic specification}
+This section describes our empirical specification. We use two categories of consumer spending: retail spending and auto spending, available at the store and the household level, respectively. Let $c_{i, j, t}$ denote total spending of the household/store $i$ located in county $j$ during year $t . N_{j}$ is the number of households/stores in county $j$. We use a balanced panel (no new entry or exit of households/stores) and fix the population at its 2008 level. We construct the average household/store spending by averaging across all households/stores that are located in the county. Thus, $C_{j, t}=\sum_{i \in j} c_{i, j, t} / N_{j}$ is the average spending in county $j$.
+
+We summarize consumption responses by constructing cumulative changes in spending between the period 2008 and 2012 to coincide with the Recovery Act period:
+
+
+\begin{equation*}
+\Delta C_{j}=\sum_{t=2008}^{2012}\left\{C_{j, t}-C_{j, 2008}\right\} . \tag{3.1}
+\end{equation*}
+
+
+Our benchmark econometric model is
+
+
+\begin{equation*}
+\frac{\Delta C_{j}}{C_{j, 2008}}=a+\beta \times \frac{G_{j}}{C_{j, 2008}}+X_{j} \Phi^{\prime}+D_{s}+\varepsilon_{j} \tag{3.2}
+\end{equation*}
+
+
+The left-hand side variable in our regression is the cumulative growth rate of consumer spending relative to 2008: $\Delta C_{j} / C_{j, 2008}$. Our main explanatory variable is per-capita Recovery Act spending, denoted $G_{j}$. We estimate the number of households in each county by dividing county population by the average number of people per household. Our right-hand side variable is government spending normalized by the average consumer spending in year 2008: $G_{j} / C_{j, 2008}$.
+
+Using the same denominator on the left- and the right-hand side preserves the usual definition of the multiplier: $\beta$ is the dollar change in consumer spending if government spending increases by $\$ 1$. We include county-level controls through the vector $X_{j}$. These are population, 2007 and 2008 (per capita) incomes, and the 2007 and 2008 unemployment rates. Finally, we include a state fixed effect, $D_{s}$, in which $s$ is the state of county $j$. We estimate the model using, in turn, least squares and instrumental variables. Our instrument is non-targeted Recovery Act dollars. The exclusion restriction is that non-targeted Recovery Act government spending affects local consumption only through its effect on total ARRA government spending, conditional on state characteristics.
+
+In the first-stage regression (reported in Supplementary Material, Appendix B), we find that one extra dollar in the specific programmes that we include as part of the instrument is associated with $\$ 3.9$ spending in all types of programmes. The adjusted $R^{2}$ is 0.62 suggesting that the instrument has a strong predictive power on overall spending, but is not the only determinant.
+
+In each specification, we weigh each county by its population. Ramey~\cite{Ramey2019-go} highlights the importance of using population weights when using cross-regional variation.\footnote{Unweighted auto spending estimates increase substantially relative to our weighted estimates since Equifax/CCP provides a wide geographical representation of the U.S. including many small counties. On the other hand, the unweighted retail spending estimates are similar to the weighted estimates. We also use weights that take into account the relatively limited geographical coverage in Nielsen as in Aladangady et al.~\cite{Aladangady2017-zu}. See Supplementary Material, Appendix C for details.} Furthermore, we cluster standard errors at the state level and winsorize the dependent and independent variable at the 1\% level.
+
+\subsection{The effect of the Recovery Act on consumer spending}
+Figure 2 contains a simple (by county) scatter plot of consumption growth from 2008 to 2012, for retail spending (left panel) and auto spending (right panel), against Recovery Act spending scaled by 2008 consumption spending. In both panels, higher government spending is associated with a higher consumption growth rate.\footnote{The range of government spending values in the $x$-axis is wider in the auto spending case because Equifax has a richer geographical representation relative to Nielsen.}
+
+The Recovery Act's effect on retail spending (Nielsen). In Table 4, we report estimates of our main regression (equation (3.2)) for retail consumer spending. We report separately ordinary least squares (OLS) and instrumental variable (IV) estimates as well as estimates with and without county controls/state fixed effects.
+
+In each specification, the local response of retail consumer spending to fiscal stimulus is positive. Excluding county controls and state fixed effects, the OLS and IV estimates are 0.20 and 0.26 , respectively. Including county controls and state fixed effects decreases both the OLS and IV estimated multipliers to 0.11 .
+
+Broader consumption multipliers using the Consumption Expenditure Survey. A possible concern with using the Nielsen dataset is that it captures a relatively narrow set of consumer purchases.
+
+\subfile{../Figures/spending-correlations}
+
+\subfile{../Tables/retail-multipliers}
+
+To translate our Nielsen estimates into a broader multiplier, we compare Nielsen-type purchases from the interview survey of the Consumption Expenditure Survey (CEX) (food at home, alcohol and beverage, detergents, cleaning products and other household products, small appliances, and personal care products) to more general types of spending. We focus on three consumption bundles. First, similarly to Kaplan et al.~\cite{Kaplan2020-oh}, we construct a set of non-durable goods that includes, in addition to our Nielsen-based bundle, spending on apparel, tobacco, and reading. In this CEX-based bundle, spending is on average 1.3 times larger than the Nielsenbased one. Second, we construct an even broader spending group that adds services, such as food away from home, spending on entertainment, telephone services, utilities, gas, and public transportation. Spending on this bundle is on average 3.6 times larger than the Nielsen-based one. Finally, we construct a bundle that also adds durables, such as spending on education, furniture, car maintenance, and health. This bundle is on average 4.5 times larger than the Nielsen-based one.\footnote{The expenditure shares for similar bundles of goods in the diary survey are significantly larger. Nonetheless, according to Bee et al.~\cite{Bee2012-xe}, the interview survey tracks aggregate spending more closely than the diary survey. The interview is designed to collect relatively larger expenditures and those that occur regularly. The diary is designed to capture small, infrequent purchases that may be missed in the interview part. A detailed analysis of estimation results based on different surveys can be found in Supplementary Material, Appendix D.} Table 5 shows a summary of goods included in each of the various bundles.
+
+\subfile{../Tables/nielsen-cex}
+
+We next estimate the elasticity of each broader spending measure to Nielsen-type spending. We estimate the following household-level regression using CEX data between 2000 and 2015:
+
+
+\begin{equation*}
+\log C_{i, t}^{j}=a+\Psi \times \log C_{i, t}^{\text {Nielsen }}+X_{i, t} \Phi^{\prime}+\varepsilon_{i, t}, \tag{3.3}
+\end{equation*}
+
+
+where $i$ denotes household, $t$ denotes time, and $j$ denotes one of the three broader bundles. We include, as household controls, a cubic on age and dummies on race, education, family type, and region, and use the weights provided by the survey.
+
+According to Aguiar and Bils~\cite{Aguiar2015-ij}, high-income households in the CEX tend to underreport their spending relative to low-income households. To alleviate potential measurement error concerns, we follow the approach in Aguiar and Bils~\cite{Aguiar2015-ij} and instrument the households' current spending with their lagged spending. Table 5 shows the elasticities estimated by equation (3.3) when $C_{i, t}^{\text {Nielsen }}$ is instrumented by its lagged spending.
+
+We find that a $1 \%$ increase in Nielsen-type categories is associated with a $0.98 \%$ increase in non-durable consumer spending, a $0.75 \%$ increase in combined spending on non-durable goods and services, and a $0.74 \%$ increase on overall spending that also includes durables. The estimated elasticities without the instrument are lower. A $1 \%$ increase in Nielsen-type categories is associated with a $0.90 \%$ increase in non-durable consumer spending, a $0.57 \%$ increase in combined spending on non-durable goods and services, and a $0.54 \%$ increase on overall spending that also includes durables (see Supplementary Material, Appendix D).
+
+Multiplying the elasticity with the expenditure share and combining with our preferred estimate from Table 4 (which includes county controls/state fixed effects and uses the IV), we arrive at a local consumption multiplier equal to 0.14 for non-durable spending, equal to 0.29 for spending on non-durable goods and services, and equal to 0.36 for overall spending that also includes durables.
+
+\subfile{../Tables/auto-multipliers}
+
+The effect of the Recovery Act on auto spending (FRB NY Equifax data). We estimate a positive response of fiscal stimulus to auto spending (Table 6).\footnote{The response of auto vehicles spending to household tax rebates varies based on different studies. Johnson et al. (2006) do not find a significant impact on auto spending based on the 2001 tax rebates, while Parker et al.~\cite{Parker2013-py} find a significant effect on spending of durables-in particular of vehicles-to the tax rebates of 2008. The 2008 payments were about twice the 2001 payments which may explain the differences between the studies. With respect to non-durable goods, both studies find similar results: a significant increase in non-durable spending.} In the specification which includes county controls/state fixed effects and uses the IV, we estimate a multiplier equal to 0.09 . Once more, the IV estimate is slightly higher than the OLS and county controls/state fixed effects reduce the difference between OLS and IV estimates. The CCP provides a much richer geographical representation of the U.S. relative to Nielsen. This explains the differences in the number of counties.
+
+Summing the consumption spending categories. We found a local retail spending multiplier from Nielsen Retail Scanner equal to 0.11 (Table 4). Using CEX data, we translated this estimate into a broader local multiplier equal to 0.14 for non-durable goods, 0.29 for combined spending on non-durable goods and services, and 0.36 for the bundle that also includes durable purchases (Table 5). Finally, we found a local auto spending multiplier from Equifax equal to 0.09 (Table 6). Since our definition of durable purchases did not include auto spending, by adding the local auto multiplier, we arrive at an estimate of the local consumption multiplier for overall spending equal to 0.45 .
+
+Our targeted multiplier in the model is the consumption multiplier derived from estimates of the bundle including non-durable goods and services (equal to 0.29 ). We find this appropriate as our model does not include investment in durable goods.
+
+\subsection{Federal and sub-national government spending}
+Our benchmark estimate of the local consumption multiplier relies on county-level variation in (federally funded) Recovery Act grants, within state borders. Existing research considers how federal Recovery Act spending influenced sub-national government spending: If the federally funded state governments cut (boosted) their own funding, this crowding out (in) would influence the estimate of the multiplier.
+
+We further explore the robustness of our approach to this issue and discuss under what conditions our exclusion restriction may be violated. We use data from the Annual Survey of State Government Finances, which contains annual state-level spending on current operations, capital outlays, and intergovernmental expenditures, and compute the state-level analogue of our federal spending variable. We find that for every Recovery Act dollar allocated by all programmes, states increased their total spending (relative to 2008) by a total of 1.5 dollars.\footnote{The crowding-in of state spending in response to the Recovery Act is also documented by Leduc and Wilson~\cite{Leduc2017-yn} and Chodorow-Reich~\cite{Chodorow-Reich2019-zl}. Additional details on the regression appear in Supplementary Material, Appendix B.}
+
+In spite of this crowding-in, our specification with state fixed effects mitigates the upward bias since it controls for the confounding government spending at the state level, as long as counties within the state received the additional state spending in a uniform manner. Since we do not have sub-national government spending per county, we are not able to test this requirement. Yet, one way to deal with this problem is to consider the magnitude of upward bias resulting from a violation of the exclusion restriction. Specifically, we can see how crowding-in affects the multiplier by dividing the increase in consumer spending without state fixed effects (but with country controls) by 1.5 and obtain a multiplier of $0.12-0.15$, which is close to the specification with state fixed effects.
+
+Alternatively, we estimate that for every Recovery Act dollar allocated in our selected programmes that are part of the instrument, states spent (relative to 2008) a total 3.3 dollars. This implies a multiplier around 0.07 , which is again close to our benchmark estimates with state fixed effects.
+
+\subsection{The effect of trade linkages on the local consumption multiplier}
+The local consumption multiplier is identified from the relative cross-regional responses to relative cross-regional differences in government spending. Trade linkages are an important channel for government spending to affect economic activity across regions. When regions trade intensively with each other (a case resembling a low preference for local goods), the fiscal stimulus must generate a smaller relative response since government spending is spread through trade flows. In contrast, when counties are in distant trade relationships, the local multiplier must be relatively large since government spending is mostly absorbed by the recipient county. This mechanism is at the heart of our model (presented in the next section) and explains why the local multiplier turns out to be around half the aggregate multiplier.
+
+We test this mechanism using data on shipments of goods across U.S. states from the CFS. The data include information on commodities shipped, their value, and the origin and destination of the shipments. The largest trading partners of a state (based on the share of shipments exported) are often neighbouring states, although it is possible for states to trade intensively with relatively distant regions that maintain large economies. For example, the top two trading partners of Texas are Louisiana and California, of Minnesota are Wisconsin and Illinois, and of Florida are Georgia and Texas.
+
+Our objective is to split counties into high-trade, medium-trade, and low-trade groups. The local multiplier should be relatively higher in low-trade groups, since the stimulus remains largely local, and relatively lower in high-trade groups since the stimulus is shared between the regions. We formulate trade groups sequentially. In the case of high- (low-) trade groups, we start a group from an initial-unmatched-county and assign new counties in the group that have the largest (smallest) trade exposure with the existing counties in the group.\footnote{Given our base sample of around 365 counties, we pick the number of counties in each group to be nine which gives around forty groups (as many as the number of states in our data).} We also consider a middle case where assignment of counties to groups occurs with half probability based
+
+
+on high-trading partners and half based on low-trading partners (called "middle-trade groups"). We formally describe our algorithm in Supplementary Material, Appendix E.
+
+From the high-trade groups formed, $41 \%$ consist of groups with counties from the same state, $36 \%$ of counties that belong to two separate states, and $21 \%$ that belong to three or more states. The average distance between two counties in a group is 426 miles. On average, the share of exports toward counties in the same group is $6.1 \%$. All low-trade groups consist of counties belonging to three or more states, the average distance between two counties in the group is equal to 1016 miles, and the average share of exports is equal to $2.2 \%$.
+
+We estimate the local consumption multiplier for each case: (i) low-trade groups, (ii) medium-trade groups, and (iii) high-trade groups. We use the following specification (written for the case of low-trade groups, as an example):
+
+
+\begin{equation*}
+\frac{\Delta C_{j}}{C_{j, 2008}}=a+\beta^{\text {low }} \times \frac{G_{j}}{C_{j, 2008}}+X_{j} \Phi^{\prime}+\sum_{1}^{N} D_{j \in \mathcal{G}}+\varepsilon_{j} \tag{3.4}
+\end{equation*}
+
+
+The left-hand side variable is the cumulative growth rate of retail spending at county $j$ relative to 2008, and $G_{j}$ is the total money awarded per household in county $j$ during the period 2009-12. $X_{j}$ includes county-level controls which are population, 2007 and 2008 (per capita) incomes, and the 2007 and 2008 unemployment rates. $D_{j \in \mathcal{G}}$ is a group dummy: it takes the value of one if county $j$ belongs to a group $\mathcal{G}$ and zero otherwise. We use, in turn, least squares and instrumental variable regression. We run the same regressions for medium- and high-trade groups and derive $\beta^{\text {medium }}$ and $\beta^{\text {high }}$, respectively.
+
+The local multiplier, which is estimated from the response of the treated relative to the untreated, reflects the type of the trade group. Our hypothesis is that the relative response of the treated counties in a high-trade group should be smaller compared to the relative response of the treated counties in a low-trade group.
+
+Figure 3 plots the estimated local multipliers (the $\beta$ 's) for the case of high-, medium-, and low-trade groups (ordered from high to low to facilitate comparison with our model). The local consumption multiplier (both OLS and IV) clearly increases as trade openness decreases. According to our IV estimates, the local multiplier can increase by $30 \%$ if the stimulus is directed from high- to low-trade regions. All estimates are statistically different from zero at the $1 \%$ level.\footnote{The difference in the estimated low-trade and high-trade $\beta$'s is equal to 0.05 with a standard error equal to 0.07 which yields a $p$-value equal to 0.24. Detailed estimates used to construct the plot appear in Supplementary Material, Appendix E. As an additional exercise, we form groups based on geographical distance instead of trade flows. We find that as a group's geographical borders expand, the local multiplier increases since trade flows within the group likely become weaker.} We demonstrate a similar relationship between trade intensity and the local consumption multiplier in our model by computing the local multiplier as we vary the underlying parameter that determines trade intensity.
+
+% Smart bibliography: Only include bibliography if standalone AND has citations
+\smartbib
+
+\pdfonly{
+  % execute this version if compiling with pdflatex
+  \captionsetup[figure]{list=no}
+  \captionsetup[table]{list=no}
+}
+
+\end{document}

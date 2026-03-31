@@ -1,0 +1,24 @@
+\input{./._relpath-to-latexroot.ltx}
+\documentclass[\latexroot/\projectname]{subfiles}
+\input{\latexroot/@resources/subfile-setup.ltx}
+
+\begin{document}
+
+\begin{figure}[h]
+  \begin{center}
+    \includegraphics[alt={},width=\textwidth]{Figures/Images/monetary-policy.jpg}
+  \captionsetup{labelformat=empty}
+  \caption{Consumption multipliers and monetary policy}
+  \end{center}
+  \end{figure}
+  
+\noindent\parbox{\textwidth}{\footnotesize
+  \textbf{Notes}: The Taylor rule is given by $R_{t}=R_{s s}+\zeta \hat{\pi}_{t}$. In Benchmark, we have $\zeta=0$. We vary parameter $\zeta$ and report the four-year local and aggregate consumption multiplier.
+}
+
+\vspace{1em}  % Add space after figure
+
+% Smart bibliography: Only include bibliography if standalone AND has citations
+\smartbib
+
+\end{document}

@@ -1,0 +1,32 @@
+\input{./._relpath-to-latexroot.ltx}
+\documentclass[\latexroot/\projectname]{subfiles}
+\input{\latexroot/@resources/subfile-setup.ltx}
+
+\begin{document}
+
+\begin{table}[h]
+  \centering
+  \caption{Local auto spending multipliers\whenintegrated{\label{tab:empirics-auto-multipliers}}}
+  \begin{adjustbox}{width=\textwidth}
+  \begin{tabular}{lllll}
+    \hline
+     & \multicolumn{4}{c}{Auto spending} \\
+     & \multicolumn{4}{c}{(CCP/Equifax)} \\
+    \cline{2-5}
+    \textbf{Spending category} & \textbf{OLS} & \textbf{IV} & \textbf{OLS} & \textbf{IV} \\
+    \hline
+    Government spending & 0.07*** (0.01) & 0.11*** (0.01) & 0.06*** (0.01) & 0.09*** (0.01) \\
+    Partial $F$ stat. & - & 248.5 & - & 187.9 \\
+    County controls/state fixed effects & No & No & Yes & Yes \\
+    \# of counties & 3,119 & 3,119 & 3,047 & 3,047 \\
+  \end{tabular}
+  \end{adjustbox}
+  \begin{flushleft}
+    \footnotesize
+    \textit{Notes:} The table shows the estimates of the regression of the growth rate in auto spending on cumulative government spending at the county level during the period 2008-12. The standard errors are given in parentheses and are clustered at the state level. One, two, and three stars denote significance at the $10 \%, 5 \%$, and $1 \%$ levels, respectively.
+  \end{flushleft}
+\end{table}
+
+\smartbib
+
+\end{document}

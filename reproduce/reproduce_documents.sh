@@ -17,11 +17,21 @@ DRY_RUN=false
 STOP_ON_ERROR="${STOP_ON_ERROR:-false}"
 SCOPE="main"
 DRAFT_MODE_ENABLED="false"
-REPO_TYPE="STANDARD"  # Will be set to "QE" if HAFiscal.tex exists
+REPO_TYPE="STANDARD"  # Will be set to "QE" if main TeX entrypoint exists
+
+# Resolve project naming from SST metadata (with sane fallback)
+PROJECT_BASENAME="${PROJECT_BASENAME:-Dupor2023-bn}"
+if [[ -f "@local/_projectname.ltx" ]]; then
+    PROJECT_BASENAME="$(tr -d '\r\n' < "@local/_projectname.ltx")"
+fi
+MAIN_TEX="${MAIN_TEX:-${PROJECT_BASENAME}.tex}"
+SLIDES_TEX="${SLIDES_TEX:-${PROJECT_BASENAME}-Slides.tex}"
+DRAFT_PDF="${DRAFT_PDF:-${PROJECT_BASENAME}-draft.pdf}"
+PROJECT_BIB="${PROJECT_BIB:-${PROJECT_BASENAME}.bib}"
 
 show_help() {
-    cat << 'EOF'
-HAFiscal LaTeX Document Reproduction Script
+    cat << EOF
+Dupor2023-bn LaTeX Document Reproduction Script
 
 USAGE:
     ./reproduce_documents.sh [OPTIONS] [TARGETS...]
@@ -31,10 +41,10 @@ OPTIONS:
     --quick, -q             Quick compilation (single pass)
     --verbose, -v           Verbose output
     --clean, -c             Clean build artifacts before compilation
-    --draft                 Compile HAFiscal*.tex in draft mode
+    --draft                 Compile ${PROJECT_BASENAME}*.tex in draft mode
                               - Latest/Public: Shows equation/figure/section labels
-                              - QE: Shows line numbers (output: HAFiscal-draft.pdf)
-                            Only applicable to HAFiscal.tex and HAFiscal.tex
+                              - QE: Shows line numbers (output: ${DRAFT_PDF})
+                            Only applicable to ${MAIN_TEX}
                             Can also be controlled via DRAFT_MODE environment variable
     --single DOCUMENT       Compile only specified document
     --list                  List available documents
@@ -49,8 +59,8 @@ OPTIONS:
                             subfiles: root + Subfiles/
 
 TARGETS:
-    main                    HAFiscal.tex (main paper)
-    slides                  HAFiscal-Slides.tex
+    main                    ${MAIN_TEX} (main paper)
+    slides                  ${SLIDES_TEX}
     appendix-hank          Subfiles/Appendix-HANK.tex
     appendix-nosplurge     Subfiles/Appendix-NoSplurge.tex
     all                    All documents (default)
@@ -58,9 +68,9 @@ TARGETS:
 EXAMPLES:
     ./reproduce_documents.sh                    # Compile all documents
     ./reproduce_documents.sh main slides       # Compile specific documents
-    ./reproduce_documents.sh --single HAFiscal.tex
+    ./reproduce_documents.sh --single ${MAIN_TEX}
     ./reproduce_documents.sh --quick           # Fast compilation
-    ./reproduce_documents.sh --draft           # Compile HAFiscal*.tex in draft mode
+    ./reproduce_documents.sh --draft           # Compile ${PROJECT_BASENAME}*.tex in draft mode
     DRAFT_MODE=1 ./reproduce_documents.sh      # Draft mode via environment variable
 EOF
 }
@@ -92,10 +102,10 @@ cleanup_auxiliary_files() {
     
     # Preserve draft-mode PDFs before cleanup
     local draft_pdf_backup=""
-    if [[ "$doc_basename" == "HAFiscal" ]] && [[ -f "HAFiscal-draft.pdf" ]]; then
-        draft_pdf_backup="HAFiscal-draft.pdf.PRESERVE"
-        mv "HAFiscal-draft.pdf" "$draft_pdf_backup" 2>/dev/null || true
-        log_info "Preserving HAFiscal-draft.pdf during cleanup..."
+    if [[ "$doc_basename" == "$PROJECT_BASENAME" ]] && [[ -f "$DRAFT_PDF" ]]; then
+        draft_pdf_backup="${DRAFT_PDF}.PRESERVE"
+        mv "$DRAFT_PDF" "$draft_pdf_backup" 2>/dev/null || true
+        log_info "Preserving $DRAFT_PDF during cleanup..."
     fi
     
     # CRITICAL: Preserve .bbl files before cleanup
@@ -123,8 +133,8 @@ cleanup_auxiliary_files() {
     
     # Restore draft-mode PDF after cleanup
     if [[ -n "$draft_pdf_backup" ]] && [[ -f "$draft_pdf_backup" ]]; then
-        mv "$draft_pdf_backup" "HAFiscal-draft.pdf" 2>/dev/null || true
-        log_success "Restored HAFiscal-draft.pdf after cleanup"
+        mv "$draft_pdf_backup" "$DRAFT_PDF" 2>/dev/null || true
+        log_success "Restored $DRAFT_PDF after cleanup"
     fi
     
     # Restore .bbl files after cleanup
@@ -142,8 +152,8 @@ cleanup_auxiliary_files() {
 # Function to resolve document target to file path
 resolve_document() {
     case "$1" in
-        "main") echo "HAFiscal.tex" ;;
-        "slides") echo "HAFiscal-Slides.tex" ;;
+        "main") echo "$MAIN_TEX" ;;
+        "slides") echo "$SLIDES_TEX" ;;
         "appendix-hank") echo "Subfiles/Appendix-HANK.tex" ;;
         "appendix-nosplurge") echo "Subfiles/Appendix-NoSplurge.tex" ;;
         *) echo "$1" ;;  # Return as-is for direct file paths
@@ -152,8 +162,8 @@ resolve_document() {
 
 list_documents() {
     echo "Available document targets:"
-    echo "  main -> HAFiscal.tex"
-    echo "  slides -> HAFiscal-Slides.tex"
+    echo "  main -> $MAIN_TEX"
+    echo "  slides -> $SLIDES_TEX"
     echo "  appendix-hank -> Subfiles/Appendix-HANK.tex"
     echo "  appendix-nosplurge -> Subfiles/Appendix-NoSplurge.tex"
 }
@@ -304,49 +314,55 @@ parse_latex_error() {
     printf "\n"
 }
 
-# Function to fetch HAFiscal.bib from with-precomputed-artifacts branch via HTTP
+# Function to ensure a usable bibliography source is available
 fetch_bibliography_if_needed() {
-    # Check if HAFiscal.bib already exists - if so, don't fetch or track it
-    # This ensures we only clean up files we fetched, not pre-existing ones
-    if [[ -f "HAFiscal.bib" ]]; then
+    # If any local .bib files exist, use them and skip fallback logic.
+    local bib_count
+    bib_count=$(find . -maxdepth 1 -name "*.bib" -type f ! -name ".*" | wc -l | tr -d " ")
+    if [[ "$bib_count" -gt 0 ]]; then
         return 0
     fi
 
-    log_info "HAFiscal.bib not found in working directory"
+    log_warning "No local .bib file found in repo root."
+    log_warning "Expected one of: $PROJECT_BIB, references.bib, or another *.bib file."
 
-    # Download from GitHub raw URL (avoids git fetch which bloats .git/objects/)
-    GITHUB_REPO="${GITHUB_REPO:-llorracc/HAFiscal-QE}"
-    PRECOMPUTED_BRANCH="${PRECOMPUTED_BRANCH:-with-precomputed-artifacts}"
-    RAW_URL="https://raw.githubusercontent.com/${GITHUB_REPO}/${PRECOMPUTED_BRANCH}/HAFiscal.bib"
+    # Optional remote fallback (disabled by default).
+    # To enable, set BIB_FALLBACK_URL to a raw .bib URL.
+    local fallback_url="${BIB_FALLBACK_URL:-}"
+    if [[ -z "$fallback_url" ]]; then
+        log_warning "Remote bibliography fallback is disabled (BIB_FALLBACK_URL unset)."
+        log_warning "Document compilation may fail if citations are required."
+        return 0
+    fi
 
     echo ""
     echo "========================================"
     echo "📦 Downloading Bibliography File"
     echo "========================================"
     echo ""
-    echo "HAFiscal.bib is required for citations but not present in main branch."
-    echo "Downloading from GitHub (${PRECOMPUTED_BRANCH} branch)..."
+    echo "No local .bib files found; attempting remote fallback..."
+    echo "URL: $fallback_url"
     echo ""
 
-    echo "→ Downloading HAFiscal.bib..."
-    if curl -L --fail --silent --show-error -o HAFiscal.bib "$RAW_URL" 2>&1; then
-        if [[ -f "HAFiscal.bib" && -s "HAFiscal.bib" ]]; then
-            FILE_SIZE=$(du -h "HAFiscal.bib" 2>/dev/null | cut -f1)
-            echo "  ✓ HAFiscal.bib ($FILE_SIZE)"
+    echo "→ Downloading $PROJECT_BIB..."
+    if curl -L --fail --silent --show-error -o "$PROJECT_BIB" "$fallback_url" 2>&1; then
+        if [[ -f "$PROJECT_BIB" && -s "$PROJECT_BIB" ]]; then
+            FILE_SIZE=$(du -h "$PROJECT_BIB" 2>/dev/null | cut -f1)
+            echo "  ✓ $PROJECT_BIB ($FILE_SIZE)"
             echo ""
             echo "✅ Successfully downloaded bibliography"
             echo "   (This will be automatically cleaned up after document compilation)"
             echo ""
             FETCHED_BIBLIOGRAPHY=true
         else
-            log_error "HAFiscal.bib download failed or file is empty"
-            rm -f HAFiscal.bib 2>/dev/null || true
+            log_error "$PROJECT_BIB download failed or file is empty"
+            rm -f "$PROJECT_BIB" 2>/dev/null || true
         fi
     else
-        log_warning "Could not download HAFiscal.bib from GitHub"
-        log_warning "URL: $RAW_URL"
+        log_warning "Could not download bibliography fallback file"
+        log_warning "URL: $fallback_url"
         log_warning "Bibliography citations may not work correctly"
-        rm -f HAFiscal.bib 2>/dev/null || true
+        rm -f "$PROJECT_BIB" 2>/dev/null || true
     fi
 
     return 0
@@ -388,8 +404,8 @@ validate_environment() {
             log_error "Tried PATH: $PATH"
             return 1
         fi
-        if [[ ! -f "HAFiscal.tex" ]]; then
-            log_error "HAFiscal.tex not found - run from project root directory"
+        if [[ ! -f "$MAIN_TEX" ]]; then
+            log_error "$MAIN_TEX not found - run from project root directory"
             return 1
         fi
         log_success "Environment validation completed (minimal checks)"
@@ -436,8 +452,8 @@ validate_environment() {
         return 1
     fi
     
-    if [[ ! -f "HAFiscal.tex" ]]; then
-        log_error "HAFiscal.tex not found - run from project root directory"
+    if [[ ! -f "$MAIN_TEX" ]]; then
+        log_error "$MAIN_TEX not found - run from project root directory"
         return 1
     fi
     
@@ -516,23 +532,23 @@ compile_document() {
     # Handle draft mode
     local current_draft_mode="$DRAFT_MODE_ENABLED"
     
-    # Validate: Only HAFiscal*.tex supports draft mode
-    if [[ "$current_draft_mode" == "true" ]] && [[ ! "$doc_name" =~ ^HAFiscal ]]; then
-        log_info "ℹ️  Draft mode only available for HAFiscal*.tex (not $doc_name), compiling normally"
+    # Validate: draft mode targets project entrypoint family only
+    if [[ "$current_draft_mode" == "true" ]] && [[ ! "$doc_name" =~ ^${PROJECT_BASENAME} ]]; then
+        log_info "ℹ️  Draft mode only available for ${PROJECT_BASENAME}*.tex (not $doc_name), compiling normally"
         current_draft_mode="false"
     fi
     
     # Apply show-labels mode based on repository type, document name, and SHOW_LABELS variable
-    if [[ "$REPO_TYPE" == "QE" ]] && [[ "$doc_name" == "HAFiscal" ]]; then
+    if [[ "$REPO_TYPE" == "QE" ]] && [[ "$doc_name" == "$PROJECT_BASENAME" ]]; then
         # QE repository: Draft mode controls line numbers
         if [[ "$current_draft_mode" == "true" ]]; then
             log_info "📝 Compiling in QE draft mode (with line numbers)"
             latexmk_opts+=("-usepretex=\\def\\DraftMode{}\\def\\OnlineAppendixHandling{${ONLINE_APPENDIX_HANDLING}}")
-            latexmk_opts+=("-jobname=HAFiscal-draft")
+            latexmk_opts+=("-jobname=${PROJECT_BASENAME}-draft")
         else
             latexmk_opts+=("-usepretex=\\def\\OnlineAppendixHandling{${ONLINE_APPENDIX_HANDLING}}")
         fi
-    elif [[ "$REPO_TYPE" == "STANDARD" ]] && [[ "$doc_name" == "HAFiscal" ]]; then
+    elif [[ "$REPO_TYPE" == "STANDARD" ]] && [[ "$doc_name" == "$PROJECT_BASENAME" ]]; then
         # Latest/Public repository: Use show-labels mechanism
         if [[ "${SHOW_LABELS:-}" == "true" ]] || [[ "$current_draft_mode" == "true" ]]; then
             log_info "📝 Compiling with labels visible"
@@ -712,8 +728,8 @@ compile_document() {
     # Verify output (after cleanup to avoid any interference)
     # Check for draft mode output filename first, then regular filename
     local pdf_output="${doc_path%.tex}.pdf"
-    if [[ "$current_draft_mode" == "true" ]] && [[ "$REPO_TYPE" == "QE" ]] && [[ "$doc_name" == "HAFiscal" ]]; then
-        pdf_output="HAFiscal-draft.pdf"
+    if [[ "$current_draft_mode" == "true" ]] && [[ "$REPO_TYPE" == "QE" ]] && [[ "$doc_name" == "$PROJECT_BASENAME" ]]; then
+        pdf_output="$DRAFT_PDF"
     fi
     
     if [[ -f "$pdf_output" ]]; then
@@ -846,7 +862,7 @@ main() {
     setup_build_environment
     
     # Detect repository type for draft mode handling
-    if [[ -f "HAFiscal.tex" ]]; then
+    if [[ -f "$MAIN_TEX" ]]; then
         REPO_TYPE="QE"
         if [[ "$VERBOSE" == "true" ]]; then
             log_info "Repository type: QE"
@@ -858,7 +874,7 @@ main() {
         fi
     fi
     
-    log_info "Starting HAFiscal document reproduction (mode: $REPRODUCTION_MODE)"
+    log_info "Starting ${PROJECT_BASENAME} document reproduction (mode: $REPRODUCTION_MODE)"
     
     # Handle single document compilation
     if [[ -n "$single_document" ]]; then
@@ -1111,14 +1127,13 @@ main() {
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     fi
 
-    # Clean up fetched bibliography file - ONLY if we fetched it (didn't exist at start)
-    # FETCHED_BIBLIOGRAPHY is only true if the file was absent and we fetched it
+    # Clean up fetched bibliography file - ONLY if we fetched it in this run.
     if [[ "$FETCHED_BIBLIOGRAPHY" == "true" ]]; then
         echo ""
-        echo "→ Cleaning up fetched HAFiscal.bib..."
-        if [[ -f "HAFiscal.bib" ]]; then
-            rm -f HAFiscal.bib
-            echo "  ✓ Removed HAFiscal.bib"
+        echo "→ Cleaning up fetched $PROJECT_BIB..."
+        if [[ -f "$PROJECT_BIB" ]]; then
+            rm -f "$PROJECT_BIB"
+            echo "  ✓ Removed $PROJECT_BIB"
         fi
         echo "✅ Cleanup complete - working tree is clean"
     fi

@@ -80,7 +80,27 @@
 % 3. Main document compiled first (to generate .aux file)
 
 \usepackage[econtex]{optional} % 'Optional' package loading system
-\renewcommand{\texname}{HAFiscal} % Keyname for paper (optional)
+% Bibliography basename resolution:
+% 1) Prefer project-named bib (e.g., Dupor2023-bn.bib)
+% 2) Fallback to references.bib (common in many repos)
+% 3) Fallback to current jobname
+\@ifundefined{projectname}{%
+  \IfFileExists{references.bib}{%
+    \renewcommand{\texname}{references}%
+  }{%
+    \renewcommand{\texname}{\jobname}%
+  }%
+}{%
+  \IfFileExists{\projectname.bib}{%
+    \renewcommand{\texname}{\projectname}%
+  }{%
+    \IfFileExists{references.bib}{%
+      \renewcommand{\texname}{references}%
+    }{%
+      \renewcommand{\texname}{\jobname}%
+    }%
+  }%
+}
 % Ensure cross-reference packages are available for standalone compilation
 \RequirePackage{xr-hyper}% For \externaldocument with hyperlinks
 \RequirePackage{amsmath}% For \eqref  
@@ -231,6 +251,7 @@
 % The following packages are ONLY needed for HAFiscal development (not QE submission)
 % Basic packages (amsmath, graphicx, booktabs, etc.) have been moved to local-qe.sty
 \usepackage{graphicx}                  % Include graphics (explicitly loaded in local.sty)
+\usepackage{adjustbox}                 % Allow for adjusting the width of tables
 \usepackage{booktabs}                  % Professional table formatting (\toprule, \midrule, \addlinespace, etc.)
 % HAFiscal development system packages
 % REMOVED: catchfile - verified zero usage (20251001)

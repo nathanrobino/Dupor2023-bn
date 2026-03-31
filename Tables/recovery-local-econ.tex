@@ -1,0 +1,32 @@
+\input{./._relpath-to-latexroot.ltx}
+\documentclass[\latexroot/\projectname]{subfiles}
+\input{\latexroot/@resources/subfile-setup.ltx}
+
+\begin{document}
+
+\begin{table}[h]
+  \centering
+  \caption{Recovery Act spending and local economic characteristics\whenintegrated{\label{tab:data-recovery-local-econ}}}
+  \begin{tabular}{lll}
+    \hline
+    \textbf{Recovery Act spending (2009-12)} & \textbf{Total} & \textbf{Instrument} \\
+    \hline
+    Per-capita county & 51.8 & 11.1 \\
+    \hspace{1em} Income 2007 (/\$10,000) & (39.0) & (12.1) \\
+    Change in per-capita county & -80.5 & 13.2 \\
+    \hspace{1em} Income 2007-09 (/\$10,000) & (181.7) & (46.9) \\
+    County unemployment & -57.1 & 22.1 \\
+    \hspace{1em} Rate 2007 (p.p.) & (53.7) & (23.0) \\
+    Change in county unemployment & -183.2*** & -34.5** \\
+    \hspace{1em} Rate 2007-09 (p.p.) & (60.7) & (16.6) \\
+    \hline
+  \end{tabular}
+  \begin{flushleft}
+    \footnotesize
+    \textit{Notes:} Table shows results from the regression in equation (2.1). ``Total'' is the total amount of government spending while ``instrument'' is the fraction of spending allocated based on our selected criteria. We weight by county population and cluster standard errors at the state level. The standard errors are given in parentheses. One, two, and three stars denote significance at the $10 \%, 5 \%$, and $1 \%$ levels, respectively.
+  \end{flushleft}
+\end{table}
+
+\smartbib
+
+\end{document}
