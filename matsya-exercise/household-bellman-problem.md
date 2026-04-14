@@ -8,17 +8,15 @@ Excerpted from `Subfiles/model.tex` (Section 4), written as a **partial-equilibr
 
 The usual analysis packs many events into a single complex decision. Following the approach of SolvingMicroDSOPs, we decompose everything that happens within a period into distinct operations so that each element can be understood in isolation.
 
-1. **Arrival perch** \[prec\]: The household enters the period with assets *a* from last period's savings decision. The Markov productivity state *x* has not yet been revealed.
-
+1. **Arrival perch** prec: The household enters the period with assets *a* from last period's savings decision. The Markov productivity state *x* has not yet been revealed.
 2. **Shock realization** (arrival → decision transition): Nature draws the new productivity *x'* from the Markov law given last period's *x*. Non-labour market resources *m* are then determined (see Step 1).
-
-3. **Decision perch** \[dec\]: The household observes *(m, x')* and jointly chooses consumption *c* and labour supply *h*. The full budget is market resources plus after-tax labour income:
+3. **Decision perch** dec: The household observes *(m, x')* and jointly chooses consumption *c* and labour supply *h*. The full budget is market resources plus after-tax labour income:
 
 $$
 c + a' = m + (1-\tau) w x' h
 $$
 
-4. **Continuation perch** \[cntn\]: End-of-period assets *a' = m + (1 - tau) w x' h - c* are determined. The household carries *(a', x')* into the next period's arrival perch.
+1. **Continuation perch** cntn: End-of-period assets *a' = m + (1 - tau) w x' h - c* are determined. The household carries *(a', x')* into the next period's arrival perch.
 
 ---
 
@@ -37,17 +35,19 @@ $$
 
 ## State and Control Spaces
 
-| Perch | Variable | Domain | Description |
-|:------|:---------|:-------|:------------|
-| Arrival \[prec\] | *a* | nonnegative | Beginning-of-period assets |
-| Arrival \[prec\] | *x* | finite set | Last period's Markov productivity (conditions *x'*) |
-| Exogenous | *x'* | finite set | Markov draw (resolves at arrival → decision) |
-| Decision \[dec\] | *m* | nonnegative | Non-labour market resources (constructed) |
-| Decision \[dec\] | *x'* | finite set | Realised productivity |
-| Control | *c* | positive | Consumption |
-| Control | *h* | 0 to 1 | Labour supply (fraction of time endowment) |
-| Continuation \[cntn\] | *a'* | nonnegative | End-of-period assets |
-| Continuation \[cntn\] | *x'* | finite set | Realised productivity (carry-forward) |
+
+| Perch             | Variable | Domain      | Description                                         |
+| ----------------- | -------- | ----------- | --------------------------------------------------- |
+| Arrival prec      | *a*      | nonnegative | Beginning-of-period assets                          |
+| Arrival prec      | *x*      | finite set  | Last period's Markov productivity (conditions *x'*) |
+| Exogenous         | *x'*     | finite set  | Markov draw (resolves at arrival → decision)        |
+| Decision dec      | *m*      | nonnegative | Non-labour market resources (constructed)           |
+| Decision dec      | *x'*     | finite set  | Realised productivity                               |
+| Control           | *c*      | positive    | Consumption                                         |
+| Control           | *h*      | 0 to 1      | Labour supply (fraction of time endowment)          |
+| Continuation cntn | *a'*     | nonnegative | End-of-period assets                                |
+| Continuation cntn | *x'*     | finite set  | Realised productivity (carry-forward)               |
+
 
 The Markov index *x* appears at both arrival and continuation perches: the current realisation *x'* passes through as a sufficient statistic for next period's Markov draw.
 
@@ -63,13 +63,13 @@ $$
 
 *(Shock draw.)*
 
-Non-labour market resources *m* are the sum of: (i) gross return on assets *(1 + r) a*, (ii) after-tax profit-sharing income *(1 - tau) (x' / x\_bar) (1 - omega) D*, and (iii) lump-sum transfer *T*:
+Non-labour market resources *m* are the sum of: (i) gross return on assets *(1 + r) a*, (ii) after-tax profit-sharing income *(1 - tau) (x' / xbar) (1 - omega) D*, and (iii) lump-sum transfer *T*:
 
 $$
 m = (1+r)a + (1-\tau)\frac{x'}{\bar{x}}(1-\omega)D + T
 $$
 
-*(Arrival to decision: construction of *m*.)*
+*(Arrival to decision: construction of m.)*
 
 The variable *m* bundles all non-labour resources into a single sufficient statistic, analogous to "market resources" (or "cash-on-hand") in SolvingMicroDSOPs. After this transition the decision-perch state is *(m, x')*.
 
@@ -81,8 +81,8 @@ The variable *m* bundles all non-labour resources into a single sufficient stati
 
 Given *(m, x')*, the household solves:
 
-$$
-V(m,x') = \max_{c,h} \left\{ u(c,h) + \beta V(a',x') \right\}
+$$  
+V(m,x') = \max_{c,h} \left( u(c,h) + \beta V(a',x') \right)  
 $$
 
 Paper eq. 4.3: value at the decision perch; *V(a',x')* on the right-hand side is the continuation value.
@@ -148,7 +148,7 @@ The continuation-perch state is *(a', x')*. The household carries both into the 
 The arrival value function integrates over the pre-decision Markov shock:
 
 $$
-V(a,x) = E_{x'|x}\left[ V(m(a,x'), x') \right] = \sum_{x'} \Pi(x'|x)\, V(m(a,x'), x')
+V(a,x) = E_{x'|x}\left[ V(m(a,x'), x') \right] = \sum_{x'} \Pi(x'|x) V(m(a,x'), x')
 $$
 
 Expectation over *x'* given *x*; paper timing: shock before choice.
@@ -169,42 +169,48 @@ This marginal value is the object that the Euler equation from the previous peri
 
 These are determined in general equilibrium but are fixed from the household's perspective:
 
-| Symbol | Meaning | Origin |
-|:-------|:--------|:-------|
-| *w* | Real wage | Labour-market clearing (intermediate firms) |
-| *r* | Real return on savings | Mutual-fund no-arbitrage: *1 + r = (1+R)/(1+pi)* |
-| *D* | Per-capita real dividends | Intermediate firms' profits |
-| *omega* | Dividend retention share | Mutual-fund structure |
-| *tau* | Proportional income-tax rate | Government budget constraint |
-| *T* | Lump-sum transfer | Government budget constraint |
-| *x* bar | Mean productivity | Normalisation |
+
+| Symbol  | Meaning                      | Origin                                           |
+| ------- | ---------------------------- | ------------------------------------------------ |
+| *w*     | Real wage                    | Labour-market clearing (intermediate firms)      |
+| *r*     | Real return on savings       | Mutual-fund no-arbitrage: *1 + r = (1+R)/(1+pi)* |
+| *D*     | Per-capita real dividends    | Intermediate firms' profits                      |
+| *omega* | Dividend retention share     | Mutual-fund structure                            |
+| *tau*   | Proportional income-tax rate | Government budget constraint                     |
+| *T*     | Lump-sum transfer            | Government budget constraint                     |
+| *x* bar | Mean productivity            | Normalisation                                    |
+
 
 ---
 
 ## Preference and Process Parameters
 
-| Symbol | Meaning |
-|:-------|:--------|
-| *beta* | Discount factor (two types per region, solved separately) |
-| *psi* | Leisure utility weight |
-| *theta* | Leisure curvature (Frisch elasticity parameter) |
+
+| Symbol           | Meaning                                                                   |
+| ---------------- | ------------------------------------------------------------------------- |
+| *beta*           | Discount factor (two types per region, solved separately)                 |
+| *psi*            | Leisure utility weight                                                    |
+| *theta*          | Leisure curvature (Frisch elasticity parameter)                           |
 | *Pi(x' given x)* | Markov transition for *x* (discretised AR(1): log *x' = rho log x + eta*) |
-| *rho* | Productivity persistence |
-| *sigma_eta* | Productivity innovation s.d. |
+| *rho*            | Productivity persistence                                                  |
+| *sigma_eta*      | Productivity innovation s.d.                                              |
+
 
 ---
 
 ## Structural Summary
 
-| Design question | Dupor2023 answer | DDSL rationale |
-|:----------------|:-----------------|:---------------|
-| Shock timing | Pre-decision (Markov *x'* resolves at arrival → decision) | Expectation in `dcsn_to_arvl_mover`, not inside max |
-| Decision variables | Joint *(c, h)* | Single decision perch, two controls |
-| State at decision | *(m, x')* (constructed) | *m* bundles asset return + dividends + transfer |
-| Continuation state | *(a', x')* | *a'* endogenous poststate; *x'* exogenous carry-forward |
-| Budget constraint | *a' = m + (1-tau) w x' h - c* | `dcsn_to_cntn_transition` |
-| Borrowing constraint | *a' >= 0* | Poststate domain bound |
-| PE vs GE | *w, r, D, T* exogenous | Clean interface for GE extension |
+
+| Design question      | Dupor2023 answer                                          | DDSL rationale                                          |
+| -------------------- | --------------------------------------------------------- | ------------------------------------------------------- |
+| Shock timing         | Pre-decision (Markov *x'* resolves at arrival → decision) | Expectation in `dcsn_to_arvl_mover`, not inside max     |
+| Decision variables   | Joint *(c, h)*                                            | Single decision perch, two controls                     |
+| State at decision    | *(m, x')* (constructed)                                   | *m* bundles asset return + dividends + transfer         |
+| Continuation state   | *(a', x')*                                                | *a'* endogenous poststate; *x'* exogenous carry-forward |
+| Budget constraint    | *a' = m + (1-tau) w x' h - c*                             | `dcsn_to_cntn_transition`                               |
+| Borrowing constraint | *a' >= 0*                                                 | Poststate domain bound                                  |
+| PE vs GE             | *w, r, D, T* exogenous                                    | Clean interface for GE extension                        |
+
 
 ---
 
