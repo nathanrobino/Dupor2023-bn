@@ -597,7 +597,7 @@ def solve_ConsLaborIntMargSep(
 
     def uPinv(X):
         # Inverse marginal utility of consumption: c such that u'(c) = X
-        return LogCRRALaborutilityPc_inv(X)
+        return LogCRRALaborutilityPc_inv(X, Psi, LsrCurv)
 
     # =====================================================================
     # Step 1: Build expected marginal value over future transitory shocks
@@ -2056,12 +2056,18 @@ LaborIntMargSepMrkvConsumerType_Mrkv_default = {
     "MrkvInitDstn": None,
 }
 
-# Leisure-utility defaults (Dupor 2023 benchmark, Tables/benchmark-parameters.tex)
-#   psi      = 5.8    (disutility of labour; targets hours worked = 42%)
-#   1/theta  = 1.0    (Frisch elasticity; Beraja et al. 2019)
-#   => theta = 1.0    (log-leisure; closed-form path in the terminal solver)
+# Leisure-utility defaults.
+#   Psi      = 1.0    Leisure weight, RECALIBRATED for THIS model's utility
+#                     normalization to deliver an ergodic mean hours of ~0.42
+#                     (the Dupor 2023 target).  NOTE: the paper's tabulated
+#                     psi = 5.8 does NOT transfer to this log-consumption /
+#                     log-leisure specification -- with Div = 0 it yields mean
+#                     hours of only ~0.086.  See dupor_minimal_demo.ipynb, which
+#                     prints the realized mean hours as a calibration check.
+#   LsrCurv  = 1.0    = theta; 1/theta = Frisch elasticity ~1.0 (Beraja et al.
+#                     2019); theta = 1 gives the log-leisure closed-form path.
 LaborIntMargSepMrkvConsumerType_LaborUtil_default = {
-    "Psi": [5.8],
+    "Psi": [1.0],
     "LsrCurv": [1.0],
 }
 
