@@ -67,9 +67,9 @@ def LogCRRALaborutility(c, h, psi, theta):
 
     Tests
     -----
-    >>> LogCRRALaborutility(1.0, 0.0, 1.0, 2.0)  # log(1) + 1*(1)^(-1)/(-1) = -1.0
+    >>> float(LogCRRALaborutility(1.0, 0.0, 1.0, 2.0))  # log(1) + 1*(1)^(-1)/(-1) = -1.0
     -1.0
-    >>> import numpy as np; np.isclose(LogCRRALaborutility(np.e, 0.0, 1.0, 1.0), 2.0)
+    >>> import numpy as np; bool(np.isclose(LogCRRALaborutility(np.e, 0.0, 1.0, 1.0), 1.0))
     True
     """
     if theta == 1:
