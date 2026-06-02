@@ -9,6 +9,7 @@ productivity shocks.  Agents choose their quantities of labor and consumption af
 observing both of these shocks, so the transitory shock is a state variable.
 """
 
+import os
 from copy import copy
 
 import matplotlib.pyplot as plt
@@ -27,6 +28,7 @@ from HARK.ConsumptionSaving.ConsIndShockModel import (
 from HARK.interpolation import (
     BilinearInterp,
     ConstantFunction,
+    IndexedInterp,
     LinearInterp,
     LinearInterpOnInterp1D,
     MargValueFuncCRRA,
@@ -1869,12 +1871,17 @@ def solve_ConsLaborIntMargSepMrkv(
         vPfunc_list.append(vPfunc_x)
         bNrmMin_list.append(b_lower)
 
-    return ConsumerLaborSolution(
+    solution = ConsumerLaborSolution(
         cFunc=cFunc_list,
         LbrFunc=LbrFunc_list,
         vPfunc=vPfunc_list,
         bNrmMin=bNrmMin_list,
     )
+    # Attach IndexedInterp wrappers so HARK's symbolic simulator (YAML) can
+    # call the policies as `cFuncX@(Mrkv, bLvl)` / `LbrFuncX@(Mrkv, bLvl)`.
+    solution.cFuncX = IndexedInterp(cFunc_list)
+    solution.LbrFuncX = IndexedInterp(LbrFunc_list)
+    return solution
 
 
 ###############################################################################
@@ -2012,12 +2019,17 @@ def make_labor_intmarg_sep_mrkv_solution_terminal(
         vPfunc_list.append(vPfunc_x)
         bNrmMin_list.append(0.0)
 
-    return ConsumerLaborSolution(
+    solution_terminal = ConsumerLaborSolution(
         cFunc=cFunc_list,
         LbrFunc=LbrFunc_list,
         vPfunc=vPfunc_list,
         bNrmMin=bNrmMin_list,
     )
+    # Attach IndexedInterp wrappers so HARK's symbolic simulator (YAML) can
+    # call the policies as `cFuncX@(Mrkv, bLvl)` / `LbrFuncX@(Mrkv, bLvl)`.
+    solution_terminal.cFuncX = IndexedInterp(cFunc_list)
+    solution_terminal.LbrFuncX = IndexedInterp(LbrFunc_list)
+    return solution_terminal
 
 
 ###############################################################################
@@ -2057,11 +2069,11 @@ LaborIntMargSepMrkvConsumerType_Mrkv_default = {
 }
 
 # Leisure-utility defaults (Dupor 2023 benchmark, Tables/benchmark-parameters.tex)
-#   psi      = 5.8    (disutility of labour; targets hours worked = 42%)
+#   psi      = 1.02   (disutility of labour; targets hours worked = 42%) (original paper is 5.8)
 #   1/theta  = 1.0    (Frisch elasticity; Beraja et al. 2019)
 #   => theta = 1.0    (log-leisure; closed-form path in the terminal solver)
 LaborIntMargSepMrkvConsumerType_LaborUtil_default = {
-    "Psi": [5.8],
+    "Psi": [1.02],
     "LsrCurv": [1.0],
 }
 
@@ -2300,9 +2312,13 @@ class LaborIntMargSepMrkvConsumerType(LaborIntMargSepConsumerType):
     # The Markov solver consumes Tau/Trnsfr/Div/Omega/xBar/Psi/LsrCurv per
     # period and WageRte per period; xGrid and MrkvArray are time-invariant.
     time_vary_ = copy(IndShockConsumerType.time_vary_)
-    # Drop permanent-income time-vary entries inherited from the parent that
-    # do not apply to this model.
-    for _drop in ("PermShkStd", "TranShkStd", "PermGroFac", "LbrCost"):
+    # Drop permanent-income / continuous-shock time-vary entries inherited
+    # from the parent that do not apply to this model.  Keeping them around
+    # confuses code that iterates ``a.time_vary`` and calls ``getattr``.
+    for _drop in (
+        "PermShkStd", "TranShkStd", "PermGroFac", "LbrCost",
+        "IncShkDstn", "PermShkDstn", "TranShkDstn", "TranShkGrid",
+    ):
         if _drop in time_vary_:
             time_vary_.remove(_drop)
     time_vary_ += [
@@ -2324,13 +2340,36 @@ class LaborIntMargSepMrkvConsumerType(LaborIntMargSepConsumerType):
     distributions = ["kNrmInitDstn"]
 
     # ------------------------------------------------------------------
+    # YAML model statement (loaded from the file next to this module so that
+    # HARK's symbolic simulator -- and therefore `make_basic_SSJ_matrices` --
+    # can build transition matrices without the YAML needing to live inside
+    # the installed HARK package).  See `_load_agent_model` in HARK.simulator:
+    # if `model_statement` is set, HARK uses it directly and never touches
+    # `HARK.models/<model_file>`.
+    # ------------------------------------------------------------------
+    _LOCAL_YAML = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "ConsLaborIntMargSepMrkv.yaml",
+    )
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if os.path.exists(self._LOCAL_YAML):
+            with open(self._LOCAL_YAML) as f:
+                self.model_statement = f.read()
+
+    # ------------------------------------------------------------------
     # Simulation methods
     # ------------------------------------------------------------------
     def _make_MrkvInitDstn(self):
         """Lazy-construct ``MrkvInitDstn`` from the stationary distribution
-        of ``MrkvArray`` if the user has not supplied one explicitly."""
+        of ``MrkvArray`` if the user has not supplied one explicitly.  Also
+        caches ``MrkvPrbsInit`` -- the 1-D probability vector that HARK's
+        symbolic simulator (YAML) consumes for `MrkvPrev ~ {MrkvPrbsInit}`."""
         if not hasattr(self, "MrkvInitDstn") or self.MrkvInitDstn is None:
             self.MrkvInitDstn = make_stationary_MrkvDstn(self.MrkvArray)
+        if not hasattr(self, "MrkvPrbsInit") or self.MrkvPrbsInit is None:
+            self.MrkvPrbsInit = np.asarray(self.MrkvInitDstn.pmv, dtype=float)
         return self.MrkvInitDstn
 
     def initialize_sim(self):
@@ -2582,9 +2621,21 @@ class LaborIntMargSepMrkvConsumerType(LaborIntMargSepConsumerType):
                 )
             )
         if grids is None:
+            # Grid keys must include (a) the ARRIVAL variables (YAML's
+            # `symbols.arrival`) so HARK can build transition matrices and
+            # (b) any OUTCOME variables requested, so HARK can build outcome
+            # matrices for them.
+            J = int(self.MrkvArray.shape[0])
             grids = {
+                # arrival states
+                "aLvlPrev": {"N": 200, "min": 0.0, "max": 50.0},
+                "MrkvPrev": {"N": J, "min": 0, "max": J - 1},
+                # outcome variables (override or extend if requesting others)
+                "cLvl": {"N": 200, "min": 0.0, "max": 5.0},
+                "Lbr":  {"N": 100, "min": 0.0, "max": 1.0},
                 "aLvl": {"N": 200, "min": 0.0, "max": 50.0},
-                "Mrkv": {"N": int(self.MrkvArray.shape[0])},
+                "mLvl": {"N": 200, "min": 0.0, "max": 50.0},
+                "yLvl": {"N": 100, "min": 0.0, "max": 5.0},
             }
         # Lazy import to avoid a hard dependency on the latest HARK SSJ API
         # at module import time.
