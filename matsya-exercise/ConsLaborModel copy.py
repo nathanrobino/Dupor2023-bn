@@ -599,7 +599,7 @@ def solve_ConsLaborIntMargSep(
 
     def uPinv(X):
         # Inverse marginal utility of consumption: c such that u'(c) = X
-        return LogCRRALaborutilityPc_inv(X)
+        return LogCRRALaborutilityPc_inv(X, Psi, LsrCurv)
 
     # =====================================================================
     # Step 1: Build expected marginal value over future transitory shocks
