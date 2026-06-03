@@ -1,17 +1,19 @@
 name: ConsLaborIntMargSepMrkv
 description: >-
   Separable-utility consumption-saving-labor-supply model with an exogenous
-  Markov-chain productivity process x_t and labor-proportional dividend
-  income (Dupor 2023).  Replaces the permanent/transitory income-shock
-  structure of ConsLaborIntMarg with a discrete AR(1)-Tauchen Markov chain
-  on productivity, and adds exogenous fiscal flows: a proportional tax Tau,
-  a lump-sum transfer Trnsfr, and an intermediate-firm dividend Div whose
-  household share is proportional to labor supplied.
+  Markov-chain productivity process x_t and autonomous dividend income
+  (Dupor 2023, paper version).  Replaces the permanent/transitory income-
+  shock structure of ConsLaborIntMarg with a discrete AR(1)-Tauchen Markov
+  chain on productivity, and adds exogenous fiscal flows -- a proportional
+  tax Tau, a lump-sum transfer Trnsfr, and an intermediate-firm dividend
+  Div whose household share is paid lump-sum within the period, independent
+  of labor supply.
 
   Budget constraint (in levels; no permanent-income normalization):
 
       c_t + a_{t+1} = T + R * a_t
-                    + (1 - Tau) * [WageRte * x_t + (1 - Omega) * (x_t / xBar) * Div] * h_t
+                    + (1 - Tau) * (1 - Omega) * (x_t / xBar) * Div
+                    + (1 - Tau) * WageRte * x_t * h_t
 
   with x_t = xGrid[Mrkv_t] and Mrkv_t ~ Categorical(MrkvArray[Mrkv_{t-1}, :]).
 
@@ -21,8 +23,8 @@ symbols:
     - MrkvPrev! (int)    \\ inbound discrete Markov productivity state
     - Mrkv (int)         \\ this period's Markov productivity state
     - xLvl               \\ productivity level x_t = xGrid[Mrkv]
-    - bLvl               \\ bank balances before labor income (R*a + Trnsfr)
-    - yLvl               \\ effective after-tax labor income (incl. dividends)
+    - bLvl               \\ bank balances before labor income (R*a + T + dividend)
+    - yLvl               \\ after-tax labor income (wage component only)
     - mLvl               \\ market resources (cash on hand) = bLvl + yLvl
     - cLvl               \\ consumption
     - Lbr                \\ labor supplied on the intensive margin, in [0,1]
@@ -34,7 +36,7 @@ symbols:
     - WageRte            \\ wage rate per unit of effective labor
     - Tau                \\ proportional income-tax rate
     - Trnsfr             \\ lump-sum fiscal transfer T
-    - Div                \\ exogenous per-hour-worked dividend D
+    - Div                \\ exogenous lump-sum dividend D (paid per period)
     - Omega              \\ dividend retention share omega
     - xBar               \\ mean productivity normalization (E[x] approx xBar)
     - xGrid              \\ array of productivity values (Mrkv indexes it)
@@ -54,10 +56,10 @@ initialize: |
 dynamics: |
   Mrkv ~ {MrkvArray}(MrkvPrev)         \\ transition the discrete Markov state
   xLvl = xGrid[Mrkv]                   \\ productivity x_t indexed by Mrkv
-  bLvl = Rfree*aLvlPrev + Trnsfr       \\ bank balances after R*a and transfer
+  bLvl = Rfree*aLvlPrev + Trnsfr + (1 - Tau)*(1 - Omega)*(xLvl/xBar)*Div
   cLvl = cFuncX@(Mrkv, bLvl)           \\ consumption from Markov-indexed policy
   Lbr  = LbrFuncX@(Mrkv, bLvl)         \\ labor supply from Markov-indexed policy
-  yLvl = (1 - Tau)*(WageRte*xLvl + (1 - Omega)*(xLvl/xBar)*Div)*Lbr
+  yLvl = (1 - Tau)*WageRte*xLvl*Lbr    \\ after-tax labor income (no dividend)
   mLvl = bLvl + yLvl                   \\ cash on hand
   aLvl = mLvl - cLvl                   \\ end-of-period assets
   live ~ {LivPrb}                      \\ draw survival
