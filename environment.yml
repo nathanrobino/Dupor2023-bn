@@ -21,11 +21,11 @@ channels:
   - defaults
 
 dependencies:
-  # Python version - REQUIRED: 3.9.x due to econ-ark dependencies
-  - python=3.9
+  # Python version - REQUIRED: >=3.11 for econ-ark >=0.17 (matsya-exercise/ HARK model)
+  - python>=3.11
 
   # Core scientific computing stack (from conda for optimized builds)
-  - numpy>=1.24,<2
+  - numpy>=1.24
   - scipy>=1.10
   - pandas>=2.0
   - matplotlib>=3.7
@@ -53,7 +53,7 @@ dependencies:
   # pip for packages not available on conda
   - pip
   - pip:
-      # econ-ark and dependencies only on PyPI
-      - econ-ark==0.14.1
+      # econ-ark and dependencies only on PyPI (>=0.17 for the matsya-exercise HARK model)
+      - econ-ark>=0.17
       # Jupyter notebook converter (not on conda)
       - ipynb-py-convert>=0.4
