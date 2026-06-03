@@ -44,9 +44,41 @@ from HARK.distributions import (
 from HARK.metric import MetricObject
 from HARK.rewards import CRRAutilityP, CRRAutilityP_inv
 from rewards import LogCRRALaborutilityPc_inv
-from HARK.utilities import make_assets_grid
+from HARK.utilities import make_assets_grid, make_grid_exp_mult
+from scipy.sparse.linalg import eigs as _sp_eigs
 
 plt.ion()
+
+
+def _jump_to_grid_1d_levels(values, grid):
+    """Project a 1-D array of continuous ``values`` onto ``grid``.
+
+    For each ``v`` returns the two neighbouring grid indices and weights such
+    that ``v`` is a convex combination of ``grid[i_lo]`` and ``grid[i_hi]``
+    (linear interpolation).  Values below ``grid[0]`` go entirely to index 0;
+    values above ``grid[-1]`` go entirely to the last index.
+
+    Returns
+    -------
+    i_lo : np.ndarray (int)
+    i_hi : np.ndarray (int)
+    w_lo : np.ndarray (float in [0,1])
+    w_hi : np.ndarray (float in [0,1])  (w_lo + w_hi == 1)
+    """
+    values = np.atleast_1d(np.asarray(values, dtype=float))
+    grid = np.asarray(grid, dtype=float)
+    N = grid.size
+
+    i_hi = np.searchsorted(grid, values, side="right")
+    i_hi = np.clip(i_hi, 1, N - 1)
+    i_lo = i_hi - 1
+
+    denom = grid[i_hi] - grid[i_lo]
+    safe_denom = np.where(denom > 0, denom, 1.0)
+    w_hi = (values - grid[i_lo]) / safe_denom
+    w_hi = np.clip(w_hi, 0.0, 1.0)
+    w_lo = 1.0 - w_hi
+    return i_lo, i_hi, w_lo, w_hi
 
 
 class ConsumerLaborSolution(MetricObject):
@@ -2146,6 +2178,16 @@ LaborIntMargSepMrkvConsumerType_simulation_default = {
     "T_age": None,
     "PerfMITShk": False,
     "neutral_measure": False,
+    # ------------------------------------------------------------------
+    # Grid for the non-stochastic steady-state (eigenvector) method.
+    # ``bMin``/``bMax`` set the range for pre-labor cash on hand ``b``;
+    # ``bCount`` is the number of grid points; ``bFac`` is the exponential-
+    # mult nesting factor (passed to ``make_grid_exp_mult``).
+    # ------------------------------------------------------------------
+    "bMin": 0.0,
+    "bMax": 60.0,
+    "bCount": 200,
+    "bFac": 3,
 }
 
 # Merge everything into the flat parameter dictionary
@@ -2573,6 +2615,159 @@ class LaborIntMargSepMrkvConsumerType(LaborIntMargSepConsumerType):
             "plot_LbrFunc is not implemented for the Markov-income variant; "
             "the policy function is a list of 1-D interpolants over Mrkv."
         )
+
+    # ------------------------------------------------------------------
+    # Non-stochastic steady state via eigenvector method
+    # ------------------------------------------------------------------
+    def define_distribution_grid(self):
+        """Build the 1-D grid over pre-labor cash on hand ``b`` used by the
+        eigenvector ergodic-distribution calculation.
+
+        The Markov state is already discrete (``MrkvArray.shape[0]`` nodes),
+        so only ``b`` needs gridding.  Uses :func:`make_grid_exp_mult` with
+        nesting factor ``bFac`` so that grid points are concentrated near
+        ``bMin``, where policies are most curved.
+        """
+        bmin = float(getattr(self, "bMin", 0.0))
+        bmax = float(getattr(self, "bMax", 60.0))
+        bN = int(getattr(self, "bCount", 200))
+        bfac = int(getattr(self, "bFac", 3))
+        self.dist_bGrid = make_grid_exp_mult(bmin, bmax, bN, bfac)
+        return self.dist_bGrid
+
+    def calc_transition_matrix(self):
+        """Construct the joint ``(M*Nb) x (M*Nb)`` transition matrix over
+        the discretised state space ``(Mrkv, b)``.
+
+        Row ``(j, i)`` is the row-stochastic distribution over next-period
+        states ``(j', i')`` starting from ``Mrkv_t = j`` and ``b_t =
+        dist_bGrid[i]``.  Death-rebirth is handled by sending a fraction
+        ``1 - LivPrb`` of mass to newborns, who start with ``a = 0`` and
+        draw their initial Markov state from the stationary distribution
+        of ``MrkvArray``.
+
+        Sets the attributes ``cPol_Grid``, ``LbrPol_Grid`` (each shape
+        ``(M, Nb)``) and ``tran_matrix`` (shape ``(M*Nb, M*Nb)``).
+        """
+        if not hasattr(self, "dist_bGrid"):
+            self.define_distribution_grid()
+        bgrid = self.dist_bGrid
+        Nb = bgrid.size
+        M = self.MrkvArray.shape[0]
+
+        # Per-period scalar parameters (use period-0 values for the
+        # stationary equilibrium).
+        Trnsfr = float(np.asarray(self.Trnsfr)[0])
+        Tau = float(np.asarray(self.Tau)[0])
+        Omega = float(np.asarray(self.Omega)[0])
+        Div = float(np.asarray(self.Div)[0])
+        xBar = float(np.asarray(self.xBar)[0])
+        Wage = float(np.asarray(self.WageRte)[0])
+        R = float(np.asarray(self.Rfree)[0])
+        LivPrb = float(np.asarray(self.LivPrb)[0])
+        xGrid = np.asarray(self.xGrid)
+
+        # Policies on the b-grid for each Markov state.
+        cPol = np.zeros((M, Nb))
+        hPol = np.zeros((M, Nb))
+        aPol = np.zeros((M, Nb))
+        soln0 = self.solution[0]
+        for j in range(M):
+            c = soln0.cFunc[j](bgrid)
+            h = soln0.LbrFunc[j](bgrid)
+            h = np.clip(h, 0.0, 1.0)
+            c = np.maximum(c, 1e-12)
+            eff_wage = (1.0 - Tau) * Wage * xGrid[j]
+            a = np.maximum(bgrid + eff_wage * h - c, 0.0)
+            cPol[j], hPol[j], aPol[j] = c, h, a
+        self.cPol_Grid = cPol
+        self.LbrPol_Grid = hPol
+        self.aPol_Grid = aPol
+
+        # Pre-compute newborn ergodic Markov distribution.
+        MrkvInit = self._make_MrkvInitDstn()
+        MrkvInit_pmv = np.asarray(MrkvInit.pmv, dtype=float)
+
+        # Build the transition matrix row by row.
+        T = np.zeros((M * Nb, M * Nb))
+        for j in range(M):
+            for jp in range(M):
+                xp = xGrid[jp]
+                divshare_p = (1.0 - Tau) * (1.0 - Omega) * (xp / xBar) * Div
+                # Survivors: continue with their assets ``aPol[j]``.
+                bp_surv = R * aPol[j] + Trnsfr + divshare_p  # shape (Nb,)
+                i_lo, i_hi, w_lo, w_hi = _jump_to_grid_1d_levels(bp_surv, bgrid)
+                col_offset = jp * Nb
+                row_idx = j * Nb + np.arange(Nb)
+                p_surv = LivPrb * self.MrkvArray[j, jp]
+                T[row_idx, col_offset + i_lo] += p_surv * w_lo
+                T[row_idx, col_offset + i_hi] += p_surv * w_hi
+                # Newborns: replace with fresh agent at a = 0, initial Markov
+                # state drawn from MrkvInit.
+                bp_newborn = Trnsfr + divshare_p  # scalar
+                i_lo_n, i_hi_n, w_lo_n, w_hi_n = _jump_to_grid_1d_levels(
+                    np.array([bp_newborn]), bgrid
+                )
+                p_newborn = (1.0 - LivPrb) * MrkvInit_pmv[jp]
+                T[row_idx, col_offset + int(i_lo_n[0])] += p_newborn * float(w_lo_n[0])
+                T[row_idx, col_offset + int(i_hi_n[0])] += p_newborn * float(w_hi_n[0])
+
+        self.tran_matrix = T
+        return T
+
+    def calc_ergodic_dist(self, transition_matrix=None):
+        """Compute the ergodic distribution over ``(Mrkv, b)`` as the
+        principal left eigenvector of the transition matrix (eigenvalue 1).
+
+        Stores the result as ``erg_dstn`` (shape ``(M, Nb)``) and as a flat
+        vector ``vec_erg_dstn`` (length ``M*Nb``).
+        """
+        if transition_matrix is None:
+            if not hasattr(self, "tran_matrix"):
+                self.calc_transition_matrix()
+            transition_matrix = self.tran_matrix
+
+        M, Nb = self.MrkvArray.shape[0], self.dist_bGrid.size
+
+        # Left eigenvector of T <=> right eigenvector of T.T.
+        eigvals, eigvecs = _sp_eigs(transition_matrix.T, k=1, sigma=1.0 + 1e-8)
+        v = np.real(eigvecs[:, 0])
+        v = np.maximum(v, 0.0)
+        v_sum = v.sum()
+        if v_sum <= 0:
+            raise RuntimeError(
+                "Ergodic distribution has nonpositive mass; check "
+                "transition_matrix construction."
+            )
+        v /= v_sum
+        self.vec_erg_dstn = v
+        self.erg_dstn = v.reshape(M, Nb)
+        return self.erg_dstn
+
+    def compute_pe_steady_state(self):
+        """End-to-end driver: build the grid, the transition matrix, the
+        ergodic distribution, and return a dict of steady-state aggregates.
+
+        Returns
+        -------
+        dict with keys
+            ``C_ss``   aggregate consumption
+            ``L_ss``   aggregate hours
+            ``A_ss``   aggregate (end-of-period) asset level
+            ``B_ss``   aggregate (pre-labor) cash on hand
+        """
+        self.define_distribution_grid()
+        self.calc_transition_matrix()
+        self.calc_ergodic_dist()
+
+        Nb = self.dist_bGrid.size
+        b_grid_2d = np.broadcast_to(self.dist_bGrid, (self.MrkvArray.shape[0], Nb))
+
+        C_ss = float(np.sum(self.cPol_Grid * self.erg_dstn))
+        L_ss = float(np.sum(self.LbrPol_Grid * self.erg_dstn))
+        A_ss = float(np.sum(self.aPol_Grid * self.erg_dstn))
+        B_ss = float(np.sum(b_grid_2d * self.erg_dstn))
+        return {"C_ss": C_ss, "L_ss": L_ss, "A_ss": A_ss, "B_ss": B_ss}
 
     # ------------------------------------------------------------------
     # Sequence-Space Jacobian convenience wrapper
