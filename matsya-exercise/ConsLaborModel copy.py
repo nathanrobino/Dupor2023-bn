@@ -1554,7 +1554,7 @@ init_labor_lifecycle_sep["T_age"] = 11
 #       is paid directly to the household (then taxed at rate `Tau`).
 #
 # After consolidating the tax schedule T_t = -T + tau*(wxh + (1-omega)*delta*D),
-# the household's flow-of-funds becomes (paper eq. 4.4 + 4.6, simplified):
+# the household's flow-of-funds matches the original Dupor (2023) paper:
 #
 #   c_t + a_{t+1} = Trnsfr
 #                 + (1 - Tau) * WageRte * x_t * h_t
@@ -1562,10 +1562,15 @@ init_labor_lifecycle_sep["T_age"] = 11
 #                 + Rfree * a_t,
 #   a_{t+1} >= 0.
 #
-# Defining the "bank balances before labor income" state
+# In this paper-style version the dividend is AUTONOMOUS income: the household
+# receives (1 - Tau) * (1 - Omega) * (x_t / xBar) * Div in full, regardless
+# of its labor choice h_t.  Defining the "bank balances before labor income"
+# state
 #   b_t = Rfree * a_t + Trnsfr + (1 - Tau) * (1 - Omega) * (x_t / xBar) * Div
 # preserves the within-period budget identity used by the existing solvers:
 #   a_{t+1} = b_t + (1 - Tau) * WageRte * x_t * h_t - c_t.
+# Note that b_t now depends on the current Markov state through x_t, so the
+# next-period bank-balance array used in the EGM step is x'-dependent.
 ###############################################################################
 
 
@@ -1677,39 +1682,40 @@ def solve_ConsLaborIntMargSepMrkv(
     (``LsrCurv``) is the leisure curvature.  With ``CRRA = 1`` this matches
     the Dupor 2023 log-consumption specification.
 
-    The budget constraint is
+    The budget constraint matches the original Dupor (2023) paper, with the
+    dividend entering as autonomous income (not scaled by hours):
 
     .. math::
-        c_t + a_{t+1} = T + (1-\tau)\bigl[w x_t + (1-\omega)\,\delta(x_t)\, D\bigr]
-            h_t + (1+r) a_t,
+        c_t + a_{t+1} = T + (1-\tau)\, w\, x_t\, h_t
+            + (1-\tau)\,(1-\omega)\,\delta(x_t)\, D
+            + (1+r)\, a_t,
         \quad a_{t+1} \geq 0,
 
-    where :math:`\delta(x_t) = x_t / \bar{x}`.  The dividend term is now
-    *proportional to labor supply* :math:`h_t`, reflecting the equilibrium
-    intermediate-goods market result that, when the labor market clears,
-    the level of dividends paid out is itself proportional to aggregate
-    labor.  The household takes :math:`D` as given but earns its share
-    only by supplying labor.  Parameters:  ``Tau`` :math:`= \tau`,
-    ``Trnsfr`` :math:`= T`, ``Omega`` :math:`= \omega`, ``Div`` :math:`= D`,
-    ``xBar`` :math:`= \bar{x}`, and ``Rfree`` :math:`= 1 + r`.
+    where :math:`\delta(x_t) = x_t / \bar{x}`.  The household receives the
+    dividend share :math:`(1-\tau)(1-\omega)\delta(x_t) D` regardless of its
+    labor choice; only the wage component scales with :math:`h_t`.
+    Parameters: ``Tau`` :math:`= \tau`, ``Trnsfr`` :math:`= T`,
+    ``Omega`` :math:`= \omega`, ``Div`` :math:`= D`, ``xBar`` :math:`= \bar{x}`,
+    ``Rfree`` :math:`= 1 + r`.
 
-    It is convenient to define the *effective per-hour after-tax income*
+    Defining the *autonomous bank balance*
 
     .. math::
-        \tilde w(x_i) := (1-\tau)\bigl[w x_i + (1-\omega)\,\delta(x_i)\, D\bigr],
+        b_t := T + (1+r) a_t + (1-\tau)(1-\omega)\,\delta(x_t)\, D
 
-    so the period budget collapses to
-    :math:`c_t + a_{t+1} = b_t + \tilde w(x_t) h_t`
-    with :math:`b_t := T + (1+r) a_t`.
+    and the *effective wage* :math:`\tilde w(x_i) := (1-\tau) w x_i`, the
+    period budget collapses to :math:`c_t + a_{t+1} = b_t + \tilde w(x_t) h_t`.
+    Note that :math:`b_t` now depends on the current Markov state through
+    :math:`x_t`, so next-period bank balances also depend on :math:`x'`.
 
     Algorithm (EGM, parallels :func:`solve_ConsLaborIntMargSep`):
 
     1. Pre-compute next-period bank balances
-       :math:`b_{t+1}(a_{t+1}) = R a_{t+1} + T`
-       on ``aXtraGrid``.  Note that, because the dividend is now earned
-       only when working, :math:`b_{t+1}` does **not** depend on
-       :math:`x'`.
-    2. Evaluate :math:`v'_{b,t+1}(b_{t+1}(a_{t+1}), x')` for each Markov
+       :math:`b_{t+1}(a_{t+1}, x') = R a_{t+1} + T
+       + (1-\tau)(1-\omega) \delta(x')\, D`
+       on ``aXtraGrid`` for each Markov state :math:`x'`.  Shape:
+       ``(aXtraCount, MrkvCount)``.
+    2. Evaluate :math:`v'_{b,t+1}(b_{t+1}(a_{t+1}, x'), x')` for each Markov
        state using the list of next-period marginal-value functions.
     3. For each current Markov state :math:`x_i`, take the Markov expectation
        :math:`\mathbb{E}[v'_{b,t+1} \mid x_i] = \sum_{x'} \Gamma_{i, x'}
@@ -1795,16 +1801,21 @@ def solve_ConsLaborIntMargSepMrkv(
 
     # ---------------------------------------------------------------
     # Step 1-2: Build next period's bank balances and evaluate v'_{b,t+1}.
-    #   b_{t+1}(a') = R*a' + Trnsfr      (dividend now earned per hour worked,
-    #                                     so it is NOT part of autonomous b)
-    # bNrmNext is shape (aXtraCount,) -- independent of x'.
+    #   b_{t+1}(a', x') = R*a' + Trnsfr
+    #                   + (1 - Tau) * (1 - Omega) * (x' / xBar) * Div
+    # The dividend is autonomous income (received regardless of h_{t+1}), so
+    # b_{t+1} depends on next period's productivity state x'.
+    # bNrmNext has shape (aXtraCount, MrkvCount), columns indexed by x'.
     # vPnext has shape (aXtraCount, MrkvCount), columns indexed by x'.
     # ---------------------------------------------------------------
-    bNrmNext = Rfree * aXtraGrid + Trnsfr
+    aXtraGrid_col = aXtraGrid.reshape(-1, 1)
+    xGrid_row = xGrid.reshape(1, -1)
+    div_share_next = (1.0 - Tau) * (1.0 - Omega) * (xGrid_row / xBar) * Div
+    bNrmNext = Rfree * aXtraGrid_col + Trnsfr + div_share_next  # (aXtraCount, MrkvCount)
 
     vPnext = np.empty((aXtraCount, MrkvCount))
     for xp_idx in range(MrkvCount):
-        vPnext[:, xp_idx] = vPfunc_next[xp_idx](bNrmNext)
+        vPnext[:, xp_idx] = vPfunc_next[xp_idx](bNrmNext[:, xp_idx])
 
     # ---------------------------------------------------------------
     # Step 3: Markov expectation conditional on the current state.
@@ -1824,11 +1835,10 @@ def solve_ConsLaborIntMargSepMrkv(
         EndOfPrdvP_x = EndOfPrdvP[:, x_idx]
 
         # Effective after-tax wage per unit of labor at this productivity.
-        # An extra hour of work yields wage income (1-Tau)*w*x plus the
-        # household's share of dividends (1-Tau)*(1-Omega)*(x/xBar)*Div.
-        eff_wage = (1.0 - Tau) * (
-            WageRte * x_now + (1.0 - Omega) * (x_now / xBar) * Div
-        )
+        # An extra hour of work yields wage income (1-Tau)*w*x; the dividend
+        # is autonomous (lump-sum within the period) and has already been
+        # folded into b_t via bNrmNext, so it does NOT enter eff_wage.
+        eff_wage = (1.0 - Tau) * WageRte * x_now
 
         # Step 4: Euler equation
         cNrmNow = uPinv(EndOfPrdvP_x)
@@ -1892,17 +1902,17 @@ def make_labor_intmarg_sep_mrkv_solution_terminal(
 ):
     r"""
     Construct the terminal-period solution for the Markov-income, separable-
-    utility variant.  The terminal agent has no future, so for each Markov
-    state :math:`x_i` they solve
+    utility variant (paper version: dividends are autonomous income).  The
+    terminal agent has no future, so for each Markov state :math:`x_i` they
+    solve
 
     .. math::
         \max_{c, h} \; u_{\text{CRRA}}(c) + \psi (1-h)^{1-\theta}/(1-\theta)
         \quad \text{s.t.} \quad c = b + \tilde w(x_i)\, h, \; h \in [0, 1],
 
-    where the effective after-tax per-hour income is
-
-    .. math::
-        \tilde w(x_i) := (1-\tau)\bigl[w x_i + (1-\omega)(x_i/\bar x)\,D\bigr].
+    where the effective wage is :math:`\tilde w(x_i) := (1-\tau)\, w\, x_i`
+    and the autonomous bank balance :math:`b` already includes the lump-sum
+    dividend share :math:`(1-\tau)(1-\omega)(x_i/\bar x)\, D` from the period.
 
     The intratemporal FOC plus the budget yields the monotone-in-:math:`h`
     transcendental equation
@@ -1931,7 +1941,10 @@ def make_labor_intmarg_sep_mrkv_solution_terminal(
         Time-varying income-tax rate; ``[-1]`` element is used.
     Div, Omega, xBar : list[float]
         Time-varying dividend level, dividend retention share, and mean-
-        productivity normaliser; ``[-1]`` elements are used.
+        productivity normaliser; ``[-1]`` elements are used.  Accepted for
+        signature parity with the main solver; the terminal-period policy
+        does not need them because the autonomous dividend is already
+        baked into the state ``b``.
 
     Returns
     -------
@@ -1943,9 +1956,8 @@ def make_labor_intmarg_sep_mrkv_solution_terminal(
     LsrCurv_T = LsrCurv[-1]
     WageRte_T = WageRte[-1]
     Tau_T = Tau[-1]
-    Div_T = Div[-1]
-    Omega_T = Omega[-1]
-    xBar_T = xBar[-1]
+    # Div_T, Omega_T, xBar_T are unused: the dividend is autonomous income
+    # and is already embedded in the state b passed to this policy.
     MrkvCount = xGrid.size
 
     # Use the same b-grid for every Markov state (with a 0 prepended)
@@ -1959,11 +1971,9 @@ def make_labor_intmarg_sep_mrkv_solution_terminal(
 
     for x_idx in range(MrkvCount):
         x_now = xGrid[x_idx]
-        # Effective after-tax wage per hour: wage income plus the
-        # dividend share that accrues per hour worked.
-        labor_inc_per_h = (1.0 - Tau_T) * (
-            WageRte_T * x_now + (1.0 - Omega_T) * (x_now / xBar_T) * Div_T
-        )
+        # Effective after-tax wage per hour worked.  No dividend term --
+        # dividends are autonomous and already included in b.
+        labor_inc_per_h = (1.0 - Tau_T) * WageRte_T * x_now
         bArr = bNrmGrid.copy()
 
         # If x = 0 (only possible if Tauchen grid includes a zero state) the
@@ -2089,9 +2099,9 @@ LaborIntMargSepMrkvConsumerType_DuporEcon_default = {
     "Trnsfr": [0.03],   # Lump-sum transfer T (paper Table: T = 0.03).
     "Div": [0.0],       # Per-capita real dividend D. Endogenous in the paper;
                         # set to 0 here as the user's "exogenous D" input.
-                        # Note: the household receives (1-Omega)*delta(x)*Div
-                        # per HOUR worked (intermediate-goods market clearing),
-                        # so non-zero Div interacts with the labor margin.
+                        # The household receives (1-Tau)*(1-Omega)*delta(x)*Div
+                        # as autonomous (lump-sum within-period) income each
+                        # period, independent of its labor choice.
     "Omega": [0.32],    # Dividend retention share omega (paper Table: 0.32).
     "xBar": [1.0],      # Mean productivity normalization; the productivity
                         # grid is centered so E[x] approx 1.
@@ -2197,22 +2207,27 @@ class LaborIntMargSepMrkvConsumerType(LaborIntMargSepConsumerType):
         capita real dividend stream ``Div`` :math:`= D` in proportion
         :math:`\delta(x_t) = x_t / \bar{x}`, after a retention share
         ``Omega`` :math:`= \omega` and the income tax.  Following the
-        paper's intermediate-goods-market result -- that, when the labor
-        market clears, the aggregate dividend is itself proportional to
-        aggregate labor supply -- the household's dividend payout is
-        *scaled by its own labor supply* :math:`h_t`.
+        original Dupor (2023) paper, the dividend is **autonomous income**:
+        the household receives :math:`(1-\tau)(1-\omega)\delta(x_t) D` in
+        full each period regardless of its labor choice :math:`h_t`.
 
     Budget constraint
     -----------------
 
     .. math::
-        c_t + a_{t+1} = T + (1-\tau)\bigl[w x_t + (1-\omega)\,\delta(x_t)\, D\bigr]
-            h_t + (1+r) a_t, \quad a_{t+1} \geq 0,
+        c_t + a_{t+1} = T + (1-\tau)\, w\, x_t\, h_t
+            + (1-\tau)(1-\omega)\,\delta(x_t)\, D
+            + (1+r) a_t, \quad a_{t+1} \geq 0,
 
-    with :math:`\delta(x_t) = x_t / \bar{x}`.  Defining the
-    *effective after-tax per-hour income* :math:`\tilde w(x_t) =
-    (1-\tau)[w x_t + (1-\omega)\delta(x_t)\, D]`, the budget collapses
-    to :math:`c_t + a_{t+1} = T + (1+r) a_t + \tilde w(x_t) h_t`.
+    with :math:`\delta(x_t) = x_t / \bar{x}`.  Defining the *autonomous
+    bank balance*
+
+    .. math::
+        b_t := T + (1+r) a_t + (1-\tau)(1-\omega)\,\delta(x_t)\, D
+
+    (which depends on the current Markov state through :math:`x_t`) and the
+    *effective wage* :math:`\tilde w(x_t) = (1-\tau) w x_t`, the budget
+    collapses to :math:`c_t + a_{t+1} = b_t + \tilde w(x_t) h_t`.
 
     Period utility
     --------------
@@ -2460,13 +2475,12 @@ class LaborIntMargSepMrkvConsumerType(LaborIntMargSepConsumerType):
         """Compute pre-labor cash on hand :math:`b_t` for each agent:
 
         .. math::
-            b_t = (1+r_{t-1}) a_{t-1} + T_t.
+            b_t = (1+r_{t-1}) a_{t-1} + T_t
+                  + (1-\\tau_t)(1-\\omega_t)(x_t/\\bar x_t)\\, D_t.
 
-        Because the dividend is now earned *per hour worked* (the
-        intermediate-goods market equilibrium implies :math:`D_t \\propto
-        H_t`), it does **not** enter the autonomous bank balance
-        :math:`b_t` -- it shows up later in :meth:`get_poststates` as
-        part of labor income :math:`y_t`.
+        The dividend share enters here as autonomous (lump-sum within-
+        period) income, so :math:`b_t` depends on the current Markov
+        state through :math:`x_t`.
 
         Time-varying parameters are looked up at ``t_cycle`` (the index of
         the period being simulated).  Interest factor ``Rfree`` is looked
@@ -2481,8 +2495,13 @@ class LaborIntMargSepMrkvConsumerType(LaborIntMargSepConsumerType):
         R = Rfree_arr[idx_R]
 
         Trnsfr = self._per_period_param("Trnsfr")
+        Tau = self._per_period_param("Tau")
+        Omega = self._per_period_param("Omega")
+        Div = self._per_period_param("Div")
+        xBar = self._per_period_param("xBar")
+        div_share = (1.0 - Tau) * (1.0 - Omega) * (xVals / xBar) * Div
 
-        bLvl = R * self.state_prev["aLvl"] + Trnsfr
+        bLvl = R * self.state_prev["aLvl"] + Trnsfr + div_share
         self.state_now["bLvl"] = bLvl
         self.state_now["xLvl"] = xVals
         self.state_now["Mrkv"] = Mrkv.copy()
@@ -2516,28 +2535,21 @@ class LaborIntMargSepMrkvConsumerType(LaborIntMargSepConsumerType):
         self.controls["Lbr"] = Lbr
 
     def get_poststates(self):
-        """Compute end-of-period asset level :math:`a_t` and the
-        intermediate quantities :math:`y_t` (labor income, *including*
-        the dividend share earned per hour worked) and :math:`m_t`
-        (post-labor market resources):
+        """Compute end-of-period asset level :math:`a_t`, labor income
+        :math:`y_t` (pure labor income; dividend already accounted for in
+        :math:`b_t`), and post-labor market resources :math:`m_t`:
 
         .. math::
-            y_t &= (1-\\tau_t)\\bigl[w_t x_t
-                + (1-\\omega_t)(x_t/\\bar x_t)\\, D_t\\bigr] h_t, \\\\
+            y_t &= (1-\\tau_t)\\, w_t\\, x_t\\, h_t, \\\\
             m_t &= b_t + y_t, \\quad
             a_t = m_t - c_t.
         """
         WageRte = self._per_period_param("WageRte")
         Tau = self._per_period_param("Tau")
-        Omega = self._per_period_param("Omega")
-        Div = self._per_period_param("Div")
-        xBar = self._per_period_param("xBar")
 
         xVals = self.state_now["xLvl"]
         Lbr = self.controls["Lbr"]
-        eff_wage = (1.0 - Tau) * (
-            WageRte * xVals + (1.0 - Omega) * (xVals / xBar) * Div
-        )
+        eff_wage = (1.0 - Tau) * WageRte * xVals
         yLvl = eff_wage * Lbr
         mLvl = self.state_now["bLvl"] + yLvl
         aLvl = mLvl - self.controls["cLvl"]
@@ -2705,13 +2717,14 @@ def sketch_SSJ_usage_for_DuporAgent():
                # Markov transition for productivity
                - Mrkv_next ~ Categorical(MrkvArray[Mrkv, :])
                - xLvl  = xGrid[Mrkv]
-               - bLvl  = Rfree*aLvl + Trnsfr        # autonomous cash on hand
+               # Dividend is autonomous (lump-sum within period), so it
+               # enters b_t directly:
+               - bLvl  = Rfree*aLvl + Trnsfr
+                         + (1-Tau)*(1-Omega)*(xLvl/xBar)*Div
                - cLvl  = cFunc[Mrkv](bLvl)
                - Lbr   = LbrFunc[Mrkv](bLvl)
-               # Dividend is earned per hour worked (intermediate-goods
-               # market clearing => D proportional to labor supply):
-               - yLvl  = (1-Tau)*(WageRte*xLvl
-                                  + (1-Omega)*(xLvl/xBar)*Div) * Lbr
+               # Pure labor income (dividend already in b):
+               - yLvl  = (1-Tau)*WageRte*xLvl*Lbr
                - aLvl' = bLvl + yLvl - cLvl
 
        Writing a full HARK-compliant YAML for this model is a one-time
